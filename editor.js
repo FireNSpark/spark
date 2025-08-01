@@ -4,6 +4,7 @@ function setGithubToken() {
   const token = prompt("Paste your GitHub personal access token:");
   if (token?.startsWith("ghp_") || token?.length > 30) {
     githubToken = token;
+    localStorage.setItem("spark_github_token", token);
     alert("✅ Token loaded. You can now edit files.");
   } else {
     alert("❌ Invalid token");
@@ -11,6 +12,7 @@ function setGithubToken() {
 }
 
 async function editGithubFile() {
+  if (!githubToken) githubToken = localStorage.getItem("spark_github_token");
   if (!githubToken) return alert("Token not set. Click 'Set GitHub Token' first.");
 
   const repo = prompt("GitHub repo (owner/repo):", "FireNSpark/spark");
