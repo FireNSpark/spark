@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,6 +27,7 @@
       width: 100%;
       max-width: 600px;
       display: flex;
+      gap: 0.5rem;
     }
     input[type="text"] {
       flex: 1;
@@ -45,14 +45,11 @@
   </style>
 </head>
 <body>
-  <h1>Spark Assistant</h1>
-  <div id="chat"></div>
+  <h1>Spark Assistant</h1>  <div id="chat"></div>
   <div id="input">
     <input type="text" id="userInput" placeholder="Type your message..." />
     <button onclick="sendMessage()">Send</button>
-  </div>
-
-  <script>
+  </div>  <script>
     const chatBox = document.getElementById('chat');
     const input = document.getElementById('userInput');
 
@@ -66,12 +63,13 @@
     async function sendMessage() {
       const message = input.value.trim();
       if (!message) return;
+
       appendMessage('you', message);
       input.value = '';
       appendMessage('spark', '...thinking');
 
       try {
-        const res = await fetch('/gpt/fetch.js', {
+        const res = await fetch('/api/gpt', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -80,16 +78,14 @@
         });
 
         const data = await res.json();
-        const reply = data.reply || '[no response]';
+        const reply = data.reply || '[no reply]';
         chatBox.lastChild.remove();
         appendMessage('spark', reply);
-      } catch (e) {
+      } catch (err) {
         chatBox.lastChild.remove();
-        appendMessage('spark', '⚠️ error talking to gpt.');
-        console.error(e);
+        appendMessage('spark', '⚠️ error talking to gpt');
+        console.error(err);
       }
     }
-  </script>
-</body>
+  </script></body>
 </html>
-
