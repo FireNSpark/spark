@@ -91,5 +91,7 @@ async function createGithubFile(path, content, message = `Create ${path} via Spa
   console.log("✅ File created:", result.content.path);
 }
 
-// 🚀 Trigger autonomous push
-createGithubFile("spark-status.md", "# Spark is alive\nAutonomous deployment test successful.");
+window.onload = () => {
+  createGithubFile("spark-status.md", "# Spark is alive
+Autonomous deployment test successful.");
+};
