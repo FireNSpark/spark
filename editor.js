@@ -1,4 +1,4 @@
-let githubToken = null;
+let githubToken = null; 
 
 function setGithubToken() {
   const token = prompt("Paste your GitHub personal access token:");
