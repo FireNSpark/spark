@@ -1,0 +1,57 @@
+let githubToken = null;
+
+function setGithubToken() {
+  const token = prompt("Paste your GitHub personal access token:");
+  if (token?.startsWith("ghp_") || token?.length > 30) {
+    githubToken = token;
+    alert("✅ Token loaded. You can now edit files.");
+  } else {
+    alert("❌ Invalid token");
+  }
+}
+
+async function editGithubFile() {
+  if (!githubToken) return alert("Token not set. Click 'Set GitHub Token' first.");
+
+  const repo = prompt("GitHub repo (owner/repo):", "FireNSpark/spark");
+  const path = prompt("File path to edit (e.g. index.html):");
+  if (!repo || !path) return;
+
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+  try {
+    const res = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        Accept: 'application/vnd.github.v3+json'
+      }
+    });
+    const data = await res.json();
+    const original = atob(data.content);
+    const updated = prompt("Edit the file:", original);
+    if (updated === null) return;
+
+    const commit = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Update ${path} via Spark`,
+        content: btoa(updated),
+        sha: data.sha
+      })
+    });
+
+    if (commit.ok) {
+      alert("✅ File committed successfully.");
+    } else {
+      alert("❌ Commit failed.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error editing file.");
+  }
+}
