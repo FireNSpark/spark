@@ -1,8 +1,9 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spark Assistant</title>
+  <title>spark assistant</title>
   <style>
     body {
       font-family: sans-serif;
@@ -23,11 +24,12 @@
       padding: 1rem;
       margin-bottom: 1rem;
     }
-    #input {
+    #input, #buttons {
       width: 100%;
       max-width: 600px;
       display: flex;
       gap: 0.5rem;
+      margin-bottom: 1rem;
     }
     input[type="text"] {
       flex: 1;
@@ -45,11 +47,21 @@
   </style>
 </head>
 <body>
-  <h1>Spark Assistant</h1>  <div id="chat"></div>
+  <h1>spark assistant</h1>
+
+  <div id="buttons">
+    <button onclick="setGithubToken()">set github token</button>
+    <button onclick="editGithubFile()">edit github file</button>
+  </div>
+
+  <div id="chat"></div>
   <div id="input">
-    <input type="text" id="userInput" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
-  </div>  <script>
+    <input type="text" id="userInput" placeholder="type your message..." />
+    <button onclick="sendMessage()">send</button>
+  </div>
+
+  <script src="editor.js"></script>
+  <script>
     const chatBox = document.getElementById('chat');
     const input = document.getElementById('userInput');
 
@@ -87,5 +99,6 @@
         console.error(err);
       }
     }
-  </script></body>
+  </script>
+</body>
 </html>
