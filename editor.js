@@ -57,3 +57,39 @@ async function editGithubFile() {
     alert("❌ Error editing file.");
   }
 }
+
+// === Spark Autopush: createGithubFile ===
+async function createGithubFile(path, content, message = `Create ${path} via Spark`) {
+  if (!githubToken) githubToken = localStorage.getItem("spark_github_token");
+  if (!githubToken) return alert("❌ Missing GitHub token");
+
+  const repo = 'FireNSpark/spark';
+  const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+  const payload = {
+    message,
+    content: btoa(unescape(encodeURIComponent(content))),
+    branch: "main"
+  };
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${githubToken}`,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await res.json();
+  if (!res.ok) {
+    console.error("❌ Error creating file:", result);
+    return;
+  }
+
+  console.log("✅ File created:", result.content.path);
+}
+
+// 🚀 Trigger autonomous push
+createGithubFile("spark-status.md", "# Spark is alive\nAutonomous deployment test successful.");
