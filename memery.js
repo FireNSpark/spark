@@ -1,161 +1,125 @@
-// === memory.js ===
-// Persistent memory module for storing and analyzing conversation across sessions
-// Now supports GitHub Gist sync (load + save + auto-create + GIST_ID storage)
+// === api/gpt.js ===
 
-const MEMORY_KEY = 'sparkPersistentMemory';
-const GIST_KEY = 'sparkGistId';
-let GIST_ID = '201f7f3a7c6705c9806cb0c75b7b2fdf';
-localStorage.setItem(GIST_KEY, GIST_ID);
-const GITHUB_TOKEN = localStorage.getItem('GITHUB_TOKEN') || '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';
-const GIST_FILENAME = 'spark-memory.json';
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-const sparkMemory = {
-  history: [],
-  enabled: true,
-  remote: true,
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-  add(role, content) {
-    if (!this.enabled) return;
-    const entry = { role, content, time: new Date().toISOString() };
-    this.history.push(entry);
-    if (this.history.length > 100) this.history.shift();
-    this.save();
-    if (this.remote) this.syncRemote();
-  },
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-  clear() {
-    this.history = [];
-    this.save();
-    console.log("🧠 Memory cleared");
-    if (this.remote) this.syncRemote();
-  },
+  try {
+    const { message } = req.body;
 
-  analyze() {
-    const keywords = {};
-    this.history.forEach(entry => {
-      const words = entry.content.toLowerCase().split(/\W+/);
-      words.forEach(word => {
-        if (word.length > 3) keywords[word] = (keywords[word] || 0) + 1;
-      });
-    });
-    return Object.entries(keywords).sort((a, b) => b[1] - a[1]);
-  },
+    const GIST_ID = process.env.GIST_ID;
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const FILENAME = 'spark-memory.json';
 
-  latest(n = 5) {
-    return this.history.slice(-n);
-  },
-
-  print() {
-    console.table(this.history);
-  },
-
-  save() {
-    try {
-      localStorage.setItem(MEMORY_KEY, JSON.stringify(this.history));
-    } catch (e) {
-      console.warn("⚠️ Failed to save memory:", e);
-    }
-  },
-
-  load() {
-    try {
-      const stored = localStorage.getItem(MEMORY_KEY);
-      if (stored) this.history = JSON.parse(stored);
-    } catch (e) {
-      console.warn("⚠️ Failed to load memory:", e);
-    }
-  },
-
-  async ensureGistExists() {
-    if (GIST_ID && GIST_ID !== 'PASTE_YOUR_GIST_ID_HERE') return;
-    try {
-      const res = await fetch(`https://api.github.com/gists`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GITHUB_TOKEN}`
-        },
-        body: JSON.stringify({
-          description: "Spark Assistant Memory",
-          public: false,
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify(this.history, null, 2)
-            }
-          }
-        })
-      });
-      const data = await res.json();
-      if (data.id) {
-        GIST_ID = data.id;
-        localStorage.setItem(GIST_KEY, GIST_ID);
-        console.log("✅ Created new Gist and saved ID:", GIST_ID);
-      } else {
-        throw new Error("Failed to create Gist");
-      }
-    } catch (err) {
-      console.warn("⚠️ Failed to create memory Gist:", err);
-    }
-  },
-
-  async syncRemote() {
-    try {
-      await this.ensureGistExists();
-      const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GITHUB_TOKEN}`
-        },
-        body: JSON.stringify({
-          files: {
-            [GIST_FILENAME]: {
-              content: JSON.stringify(this.history, null, 2)
-            }
-          }
-        })
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`GitHub API error: ${res.status} - ${errorText}`);
-      }
-      console.log("📡 Synced memory to GitHub Gist");
-    } catch (err) {
-      console.warn("⚠️ Failed to sync memory to GitHub:", err);
-    }
-  },
-
-  async loadRemote() {
-    try {
-      await this.ensureGistExists();
+    const fetchGistMemory = async () => {
       const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
         headers: {
-          "Authorization": `Bearer ${GITHUB_TOKEN}`
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json"
         }
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`GitHub API error: ${res.status} - ${errorText}`);
-      }
-
       const data = await res.json();
-      const file = data.files[GIST_FILENAME];
-      if (file && file.content) {
-        this.history = JSON.parse(file.content);
-        this.save();
-        console.log("🧠 Loaded memory from GitHub Gist");
-      }
-    } catch (err) {
-      console.warn("⚠️ Failed to load memory from GitHub:", err);
+      const raw = data.files?.[FILENAME]?.content;
+      return raw ? JSON.parse(raw) : [];
+    };
+
+    const saveGistMemory = async (memory) => {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          files: {
+            [FILENAME]: { content: JSON.stringify(memory, null, 2) }
+          }
+        })
+      });
+    };
+
+    const embed = async (text) => {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
+      });
+      const json = await res.json();
+      return json.data?.[0]?.embedding || [];
+    };
+
+    const cosineSim = (a, b) => {
+      const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+      const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+      const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+      return dot / (magA * magB);
+    };
+
+    const memory = await fetchGistMemory();
+    const queryVec = await embed(message);
+    const results = memory.map(entry => ({
+      ...entry,
+      similarity: cosineSim(queryVec, entry.embedding)
+    })).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+
+    const pastMemory = results.map(entry => ({
+      role: entry.role,
+      content: entry.content
+    }));
+
+    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
+          },
+          ...pastMemory,
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      })
+    });
+
+    const data = await completion.json();
+    const reply = data.choices?.[0]?.message?.content || "[No reply]";
+
+    if (reply && reply !== '[No reply]') {
+      const userVec = await embed(message);
+      const replyVec = await embed(reply);
+      memory.push({ role: 'user', content: message, embedding: userVec });
+      memory.push({ role: 'assistant', content: reply, embedding: replyVec });
+      if (memory.length > 200) memory.splice(0, memory.length - 200);
+      await saveGistMemory(memory);
     }
+
+    return res.status(200).json({ reply });
+
+  } catch (err) {
+    console.error("GPT Error:", err);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
-};
+}
 
-// Load local + remote memory
-sparkMemory.load();
-if (sparkMemory.remote) sparkMemory.loadRemote();
-
-// Optional global access
-window.sparkMemory = sparkMemory;
