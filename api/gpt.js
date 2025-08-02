@@ -1,7 +1,5 @@
 // === api/gpt.js ===
 
-import vectorMemory from './memory-vectors.js';
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -18,9 +16,54 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    // Fetch most relevant memory using semantic similarity
-    const relevant = await vectorMemory.searchRelevant(message, 5);
-    const pastMemory = relevant.map(entry => ({
+    // === Inline vector memory logic ===
+    const VECTOR_MEMORY_KEY = 'sparkVectorMemory';
+
+    const embed = async (text) => {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
+      });
+      const json = await res.json();
+      return json.data?.[0]?.embedding || [];
+    };
+
+    const cosineSim = (a, b) => {
+      const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+      const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+      const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+      return dot / (magA * magB);
+    };
+
+    const loadMemory = () => {
+      try {
+        const raw = localStorage.getItem(VECTOR_MEMORY_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const saveMemory = (data) => {
+      try {
+        localStorage.setItem(VECTOR_MEMORY_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('⚠️ Memory save failed', e);
+      }
+    };
+
+    const memory = loadMemory();
+    const queryVec = await embed(message);
+    const results = memory.map(entry => ({
+      ...entry,
+      similarity: cosineSim(queryVec, entry.embedding)
+    })).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+
+    const pastMemory = results.map(entry => ({
       role: entry.role,
       content: entry.content
     }));
@@ -50,9 +93,13 @@ export default async function handler(req, res) {
     const data = await completion.json();
     const reply = data.choices?.[0]?.message?.content || "[No reply]";
 
-    // Store user input and assistant reply in vector memory
-    await vectorMemory.add("user", message);
-    await vectorMemory.add("assistant", reply);
+    // Store new vectors
+    const userVec = await embed(message);
+    const replyVec = await embed(reply);
+    memory.push({ role: 'user', content: message, embedding: userVec });
+    memory.push({ role: 'assistant', content: reply, embedding: replyVec });
+    if (memory.length > 200) memory.splice(0, memory.length - 200);
+    saveMemory(memory);
 
     return res.status(200).json({ reply });
 
