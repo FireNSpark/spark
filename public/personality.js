@@ -1,1 +1,1 @@
-
+/public/personality.js
