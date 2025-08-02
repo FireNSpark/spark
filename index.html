@@ -70,6 +70,8 @@ button {
   <script src="sparkcore.js"></script>
   <script src="memery.js"></script>
   <script src="voice.js"></script>
+  <script src="mic.js"></script>
+  <script type="module" src="plugins.js"></script>
 </head>
 <body>
   <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
@@ -118,7 +120,7 @@ button {
     }
 
     function startMic() {
-      appendMessage('system', '🎤 mic button pressed (mic input coming soon...)');
+      sparkMic.start();
     }
   </script></body>
 </html>
