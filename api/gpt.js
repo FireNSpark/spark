@@ -16,8 +16,9 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    const GIST_ID = '201f7f3a7c6705c9806cb0c75b7b2fdf';
-    const GITHUB_TOKEN = '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';
+    const GIST_ID = process.env.GIST_ID;
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const FILENAME = 'spark-memory.json';
 
     const fetchGistMemory = async () => {
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
       });
@@ -84,14 +85,14 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
         model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: "You are Spark — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
+            content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
           },
           ...pastMemory,
           {
