@@ -1,40 +1,28 @@
-// === voice.js ===
-// Full Spark voice engine with dynamic mode control
+// === voice.js === // Spark voice engine customized to sound like user
 
-const sparkVoice = {
-  voiceEnabled: true,
-  currentUtterance: null,
+const sparkVoice = { voiceEnabled: true, currentUtterance: null, profile: { rate: 0.95, pitch: 1.1, volume: 1.0, lang: 'en-US', energy: 'direct + witty', attitude: 'confident with sarcasm', inflection: 'upward emphasis, mid-sentence pauses', vocalPersona: 'Josh — sharp, expressive, emotionally reactive' },
 
-  speak(text) {
-    if (!sparkCore.voice || !sparkVoice.voiceEnabled) return;
+speak(text) { if (!sparkCore.voice || !sparkVoice.voiceEnabled) return;
 
-    sparkVoice.stop(); // stop any ongoing
+sparkVoice.stop(); // cancel any ongoing speech
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    utterance.lang = 'en-US';
+const utterance = new SpeechSynthesisUtterance(text);
+utterance.rate = sparkVoice.profile.rate;
+utterance.pitch = sparkVoice.profile.pitch;
+utterance.volume = sparkVoice.profile.volume;
+utterance.lang = sparkVoice.profile.lang;
 
-    sparkVoice.currentUtterance = utterance;
-    speechSynthesis.speak(utterance);
-  },
+sparkVoice.currentUtterance = utterance;
+speechSynthesis.speak(utterance);
 
-  stop() {
-    if (speechSynthesis.speaking) {
-      speechSynthesis.cancel();
-    }
-    sparkVoice.currentUtterance = null;
-  },
+},
 
-  toggle() {
-    sparkVoice.voiceEnabled = !sparkVoice.voiceEnabled;
-    console.log(`Voice ${sparkVoice.voiceEnabled ? 'enabled' : 'muted'}`);
-  },
+stop() { if (speechSynthesis.speaking) { speechSynthesis.cancel(); } sparkVoice.currentUtterance = null; },
 
-  test() {
-    sparkVoice.speak("Voice system initialized and ready.");
-  }
-};
+toggle() { sparkVoice.voiceEnabled = !sparkVoice.voiceEnabled; console.log(Voice ${sparkVoice.voiceEnabled ? 'enabled' : 'muted'}); },
+
+test() { sparkVoice.speak("This is Spark — now sounding a lot more like you."); } };
 
 window.sparkVoice = sparkVoice;
+
+
