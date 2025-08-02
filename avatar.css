@@ -1,0 +1,18 @@
+/* === avatar.css === */
+
+#avatarImage { transition: all 0.2s ease-in-out; }
+
+.talking { animation: pulse 0.4s infinite; }
+
+@keyframes pulse { 0%   { filter: brightness(1);   transform: scale(1);   } 50%  { filter: brightness(1.4); transform: scale(1.03); } 100% { filter: brightness(1);   transform: scale(1);   } }
+
+.thinking { box-shadow: 0 0 20px #0ff; }
+
+.happy { box-shadow: 0 0 20px lime; }
+
+.angry { box-shadow: 0 0 20px red; }
+
+.sad { box-shadow: 0 0 20px blue; }
+
+.neutral { box-shadow: 0 0 15px #0ff; }
+
