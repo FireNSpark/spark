@@ -107,6 +107,19 @@ const sparkCore = {
 
 // Auto-log startup
 sparkCore.log("🟢 Spark core initialized");
+// ✅ Add sparkMemory as expected by other files
+window.sparkMemory = {
+  log: [],
+  add: function(role, content) {
+    const entry = { role, content };
+    this.log.push(entry);
+    if (this.log.length > 200) this.log.shift();
+    console.log("🧠 sparkMemory added:", entry);
+  }
+};
+
+
+
 
 // Optional: expose globally
 window.sparkCore = sparkCore;
