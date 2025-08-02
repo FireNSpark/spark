@@ -6,7 +6,9 @@ const MEMORY_KEY = 'sparkPersistentMemory';
 const GIST_KEY = 'sparkGistId';
 let GIST_ID = '3aa3536fc2294b3d902d91b8962355ef';
 localStorage.setItem(GIST_KEY, GIST_ID);
-const GITHUB_TOKEN = localStorage.getItem('GITHUB_TOKEN') || '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';
+const GITHUB_TOKEN = typeof process !== 'undefined' && process.env && process.env.GITHUB_TOKEN
+  ? process.env.GITHUB_TOKEN
+  : localStorage.getItem('GITHUB_TOKEN');
 const GIST_FILENAME = 'spark-memory.json';
 
 const sparkMemory = {
@@ -67,7 +69,7 @@ const sparkMemory = {
   },
 
   async ensureGistExists() {
-    if (GIST_ID && GIST_ID !== 'PASTE_YOUR_GIST_ID_HERE') return;
+    if (GIST_ID !== 'PASTE_YOUR_GIST_ID_HERE') return;
     try {
       const res = await fetch(`https://api.github.com/gists`, {
         method: "POST",
@@ -159,4 +161,3 @@ if (sparkMemory.remote) sparkMemory.loadRemote();
 
 // Optional global access
 window.sparkMemory = sparkMemory;
-
