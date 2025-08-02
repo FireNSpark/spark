@@ -6,7 +6,7 @@ const MEMORY_KEY = 'sparkPersistentMemory';
 const GIST_KEY = 'sparkGistId';
 let GIST_ID = '3aa3536fc2294b3d902d91b8962355ef';
 localStorage.setItem(GIST_KEY, GIST_ID);
-const GITHUB_TOKEN = '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';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || localStorage.getItem('GITHUB_TOKEN');
 const GIST_FILENAME = 'spark-memory.json';
 
 const sparkMemory = {
