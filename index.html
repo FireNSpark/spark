@@ -51,8 +51,8 @@
   </style>
   <script src="github-push.js"></script>
   <script src="spark-core.js"></script>
-  <script src="voice.js"></script>
   <script src="memory.js"></script>
+  <script src="voice.js"></script>
   <script src="editor.js"></script>
 </head>
 <body>
@@ -66,46 +66,6 @@
   </div>  <div id="chat"></div>  <div id="input">
     <input type="text" id="userInput" placeholder="type your message..." />
     <button onclick="sendMessage()">send</button>
-  </div>  <script>
-    const chatBox = document.getElementById('chat');
-    const input = document.getElementById('userInput');
-
-    function appendMessage(sender, text) {
-      const msg = document.createElement('div');
-      msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const message = input.value.trim();
-      if (!message) return;
-
-      appendMessage('you', message);
-      input.value = '';
-      sparkMemory.add('user', message);
-      appendMessage('spark', '...thinking');
-
-      try {
-        const res = await fetch('/api/gpt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ message })
-        });
-
-        const data = await res.json();
-        const reply = data.reply || '[no reply]';
-        chatBox.lastChild.remove();
-        appendMessage('spark', reply);
-        sparkMemory.add('assistant', reply);
-        sparkVoice.speak(reply);
-      } catch (err) {
-        chatBox.lastChild.remove();
-        appendMessage('spark', '⚠️ error talking to gpt');
-        console.error(err);
-      }
-    }
-  </script></body>
+  </div>
+</body>
 </html>
