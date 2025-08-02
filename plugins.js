@@ -14,7 +14,8 @@ import './files.js';
 
 console.log('🔌 Spark plugins loaded');
 
-// Optional reinitializers if plugins register to window
+// Optional plugin lifecycle hooks
+
 document.addEventListener("DOMContentLoaded", () => {
   if (window.sparkMic?.init) window.sparkMic.init();
   if (window.sparkExpression?.init) window.sparkExpression.init();
