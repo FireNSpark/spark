@@ -70,6 +70,7 @@
   <script src="spark-core.js"></script>
   <script src="voice.js"></script>
   <script src="avatar.js"></script>
+  <script src="memory.js"></script>
 </head>
 <body>
   <h1>spark assistant</h1>
@@ -107,6 +108,7 @@
 
       appendMessage('you', message);
       input.value = '';
+      sparkMemory.add('user', message);
       appendMessage('spark', '...thinking');
 
       try {
@@ -122,6 +124,7 @@
         const reply = data.reply || '[no reply]';
         chatBox.lastChild.remove();
         appendMessage('spark', reply);
+        sparkMemory.add('assistant', reply);
         sparkVoice.speak(reply);
       } catch (err) {
         chatBox.lastChild.remove();
