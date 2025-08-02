@@ -12,12 +12,6 @@ utterance.pitch = sparkVoice.profile.pitch;
 utterance.volume = sparkVoice.profile.volume;
 utterance.lang = sparkVoice.profile.lang;
 
-sparkAvatar.react('talking');
-
-utterance.onend = () => {
-  sparkAvatar.react('neutral');
-};
-
 sparkVoice.currentUtterance = utterance;
 speechSynthesis.speak(utterance);
 
