@@ -16,9 +16,8 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    // === GitHub Gist-based vector memory ===
-    const GIST_ID = process.env.GIST_ID || (typeof localStorage !== 'undefined' ? localStorage.getItem('GIST_ID') : '');
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN || (typeof localStorage !== 'undefined' ? localStorage.getItem('GITHUB_TOKEN') : '');
+    const GIST_ID = '201f7f3a7c6705c9806cb0c75b7b2fdf';
+    const GITHUB_TOKEN = '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';
     const FILENAME = 'spark-memory.json';
 
     const fetchGistMemory = async () => {
@@ -106,7 +105,6 @@ export default async function handler(req, res) {
     const data = await completion.json();
     const reply = data.choices?.[0]?.message?.content || "[No reply]";
 
-    // Only embed and save if GPT returned a valid response
     if (reply && reply !== '[No reply]') {
       const userVec = await embed(message);
       const replyVec = await embed(reply);
