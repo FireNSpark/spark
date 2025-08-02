@@ -1,18 +1,36 @@
 /* === avatar.css === */
 
-#avatarImage { transition: all 0.2s ease-in-out; }
+#avatarImage {
+  transition: all 0.2s ease-in-out;
+  transform-origin: center bottom;
+}
 
-.talking { animation: pulse 0.4s infinite; }
+.talking {
+  animation: mouthMove 0.25s infinite;
+}
 
-@keyframes pulse { 0%   { filter: brightness(1);   transform: scale(1);   } 50%  { filter: brightness(1.4); transform: scale(1.03); } 100% { filter: brightness(1);   transform: scale(1);   } }
+@keyframes mouthMove {
+  0%   { transform: scaleY(1) translateY(0); }
+  50%  { transform: scaleY(0.7) translateY(2px); }
+  100% { transform: scaleY(1) translateY(0); }
+}
 
-.thinking { box-shadow: 0 0 20px #0ff; }
+.thinking {
+  box-shadow: 0 0 20px #0ff;
+}
 
-.happy { box-shadow: 0 0 20px lime; }
+.happy {
+  box-shadow: 0 0 20px lime;
+}
 
-.angry { box-shadow: 0 0 20px red; }
+.angry {
+  box-shadow: 0 0 20px red;
+}
 
-.sad { box-shadow: 0 0 20px blue; }
+.sad {
+  box-shadow: 0 0 20px blue;
+}
 
-.neutral { box-shadow: 0 0 15px #0ff; }
-
+.neutral {
+  box-shadow: 0 0 15px #0ff;
+}
