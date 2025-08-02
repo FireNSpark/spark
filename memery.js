@@ -4,7 +4,8 @@
 
 const MEMORY_KEY = 'sparkPersistentMemory';
 const GIST_KEY = 'sparkGistId';
-let GIST_ID = localStorage.getItem(GIST_KEY) || '7cfa4a14d0c2e3d0de63ae1f9a56d1c4';
+let GIST_ID = '3aa3536fc2294b3d902d91b8962355ef';
+localStorage.setItem(GIST_KEY, GIST_ID);
 const GITHUB_TOKEN = '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';
 const GIST_FILENAME = 'spark-memory.json';
 
@@ -115,7 +116,10 @@ const sparkMemory = {
         })
       });
 
-      if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`GitHub API error: ${res.status} - ${errorText}`);
+      }
       console.log("📡 Synced memory to GitHub Gist");
     } catch (err) {
       console.warn("⚠️ Failed to sync memory to GitHub:", err);
@@ -131,7 +135,10 @@ const sparkMemory = {
         }
       });
 
-      if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`GitHub API error: ${res.status} - ${errorText}`);
+      }
 
       const data = await res.json();
       const file = data.files[GIST_FILENAME];
