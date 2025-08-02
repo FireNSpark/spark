@@ -1,5 +1,7 @@
 // === api/gpt.js ===
 
+import vectorMemory from './memory-vectors.js';
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -16,6 +18,13 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
+    // Fetch most relevant memory using semantic similarity
+    const relevant = await vectorMemory.searchRelevant(message, 5);
+    const pastMemory = relevant.map(entry => ({
+      role: entry.role,
+      content: entry.content
+    }));
+
     const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -27,8 +36,9 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "You are Spark — a confident, emotionally expressive AI assistant who talks like Josh. Be bold, real, and reactive. Use sarcasm sparingly and only when it enhances clarity or humor."
+            content: "You are Spark — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
           },
+          ...pastMemory,
           {
             role: "user",
             content: message
@@ -39,6 +49,10 @@ export default async function handler(req, res) {
 
     const data = await completion.json();
     const reply = data.choices?.[0]?.message?.content || "[No reply]";
+
+    // Store user input and assistant reply in vector memory
+    await vectorMemory.add("user", message);
+    await vectorMemory.add("assistant", reply);
 
     return res.status(200).json({ reply });
 
