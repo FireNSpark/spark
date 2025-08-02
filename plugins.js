@@ -1,26 +1,29 @@
 // === plugins.js ===
-// Master switchboard to load plug-and-play Spark modules
+// Load and initialize Spark plug-and-play modules
 
-(async () => {
-  const pluginModules = [
-    'avatar-react.js',
-    'expression-mapper.js',
-    'files.js',
-    'calendar.js',
-    'dimensions.js',
-    'search.js',
-    'personality.js',
-    'history.js',
-    'memory-panel.js',
-    'mic.js'
-  ];
+import './mic.js';
+import './expression-mapper.js';
+import './avatar-react.js';
+import './calendar.js';
+import './dimensions.js';
+import './history.js';
+import './memory-panel.js';
+import './personality.js';
+import './search.js';
+import './files.js';
 
-  for (const mod of pluginModules) {
-    try {
-      await import(`./${mod}`);
-      console.log(`✅ Loaded ${mod}`);
-    } catch (err) {
-      console.warn(`⚠️ Failed to load ${mod}:`, err);
-    }
-  }
-})();
+console.log('🔌 Spark plugins loaded');
+
+// Optional reinitializers if plugins register to window
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.sparkMic?.init) window.sparkMic.init();
+  if (window.sparkExpression?.init) window.sparkExpression.init();
+  if (window.sparkAvatar?.init) window.sparkAvatar.init();
+  if (window.sparkCalendar?.init) window.sparkCalendar.init();
+  if (window.sparkMemoryPanel?.load) window.sparkMemoryPanel.load();
+  if (window.sparkPersonality?.boot) window.sparkPersonality.boot();
+  if (window.sparkSearch?.attach) window.sparkSearch.attach();
+  if (window.sparkFiles?.connect) window.sparkFiles.connect();
+  if (window.sparkHistory?.render) window.sparkHistory.render();
+  if (window.sparkDimensions?.map) window.sparkDimensions.map();
+});
