@@ -1,4 +1,4 @@
-// === voice.js === // Spark voice engine customized to sound like user
+// === voice.js === /* global sparkCore, speechSynthesis, SpeechSynthesisUtterance */ // Spark voice engine customized to sound like user
 
 const sparkVoice = { voiceEnabled: true, currentUtterance: null, profile: { rate: 0.95, pitch: 1.1, volume: 1.0, lang: 'en-US', energy: 'direct + witty', attitude: 'confident with sarcasm', inflection: 'upward emphasis, mid-sentence pauses', vocalPersona: 'Josh — sharp, expressive, emotionally reactive' },
 
@@ -19,7 +19,7 @@ speechSynthesis.speak(utterance);
 
 stop() { if (speechSynthesis.speaking) { speechSynthesis.cancel(); } sparkVoice.currentUtterance = null; },
 
-toggle() { sparkVoice.voiceEnabled = !sparkVoice.voiceEnabled; console.log(Voice ${sparkVoice.voiceEnabled ? 'enabled' : 'muted'}); },
+toggle() { sparkVoice.voiceEnabled = !sparkVoice.voiceEnabled; console.log('Voice ' + (sparkVoice.voiceEnabled ? 'enabled' : 'muted')); },
 
 test() { sparkVoice.speak("This is Spark — now sounding a lot more like you."); } };
 
