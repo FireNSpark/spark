@@ -17,8 +17,8 @@ export default async function handler(req, res) {
     const { message } = req.body;
 
     // === GitHub Gist-based vector memory ===
-    const GIST_ID = process.env.GIST_ID;
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GIST_ID = process.env.GIST_ID || (typeof localStorage !== 'undefined' ? localStorage.getItem('GIST_ID') : '');
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN || (typeof localStorage !== 'undefined' ? localStorage.getItem('GITHUB_TOKEN') : '');
     const FILENAME = 'spark-memory.json';
 
     const fetchGistMemory = async () => {
