@@ -72,12 +72,6 @@
   <script src="memery.js"></script>
   <script src="voice.js"></script>
   <script src="mic.js"></script>
-  <script type="module" src="plugins.js"></script>
-  <script src="/avatar-react.js"></script>
-  <script src="/expression-mapper.js"></script>
-  <script src="/files.js"></script>
-  <script src="/search.js"></script>
-  <script src="/personality.js"></script>
 </head>
 <body>
   <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
@@ -118,9 +112,7 @@ async function sendMessage() {
     appendMessage('spark', reply);
     sparkMemory.add('assistant', reply);
     sparkVoice.speak(reply);
-    sparkExpression.applyExpression(reply);
 
-    // Animate avatar when speaking
     const avatar = document.getElementById('avatarImage');
     if (avatar) {
       avatar.classList.add('pulse');
