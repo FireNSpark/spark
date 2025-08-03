@@ -119,14 +119,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
-
-// ✅ Add global memory object for front-end use
-window.sparkMemory = {
-  log: [],
-  add: function(role, content) {
-    const entry = { role, content };
-    this.log.push(entry);
-    if (this.log.length > 200) this.log.shift();
-    console.log("🧠 sparkMemory added:", entry);
-  }
-};
