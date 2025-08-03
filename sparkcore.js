@@ -1,47 +1,57 @@
-const sparkCore = {
-  name: "Spark",
-  version: "v0.1",
-  status: "booting",
-  mode: "default",
-  voice: true,
-  memoryEnabled: true,
-  avatarVisible: true,
-  pulseActive: false,
-  ritualsEnabled: false,
-  systemLog: [],
+// === api/gpt.js ===
 
-  log(event) {
-    const timestamp = new Date().toISOString();
-    const entry = `[${timestamp}] ${event}`;
-    sparkCore.systemLog.push(entry);
-    console.log(entry);
-  },
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  toggle(key) {
-    if (key in sparkCore) {
-      sparkCore[key] = !sparkCore[key];
-      sparkCore.log(`Toggled ${key} to ${sparkCore[key]}`);
-    }
-  },
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  updateStatus(newStatus) {
-    sparkCore.status = newStatus;
-    sparkCore.log(`Status changed to ${newStatus}`);
-  },
+  try {
+    const { message } = req.body;
 
-  identify() {
-    return `${sparkCore.name} [${sparkCore.version}] - Mode: ${sparkCore.mode}`;
-  },
+    const GIST_ID = process.env.GIST_ID;
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const FILENAME = 'spark-memory.json';
 
-  async respondWithSpark(message) {
-    sparkCore.log(`💬 User: ${message}`);
+    if (!OPENAI_API_KEY) throw new Error("Missing OpenAI API Key");
+
+    const fetchGistMemory = async () => {
+      const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json"
+        }
+      });
+      const data = await res.json();
+      const raw = data.files?.[FILENAME]?.content;
+      return raw ? JSON.parse(raw) : [];
+    };
+
+    const saveGistMemory = async (memory) => {
+      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          files: {
+            [FILENAME]: { content: JSON.stringify(memory, null, 2) }
+          }
+        })
+      });
+    };
 
     const embed = async (text) => {
       const res = await fetch("https://api.openai.com/v1/embeddings", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
         },
         body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
       });
@@ -56,70 +66,56 @@ const sparkCore = {
       return dot / (magA * magB);
     };
 
-    const memoryKey = 'sparkVectorMemory';
-    const loadMemory = () => JSON.parse(localStorage.getItem(memoryKey) || '[]');
-    const saveMemory = (m) => localStorage.setItem(memoryKey, JSON.stringify(m));
-    const memory = loadMemory();
-
+    const memory = await fetchGistMemory();
     const queryVec = await embed(message);
-    const relevant = memory.map(entry => ({
+    const results = memory.map(entry => ({
       ...entry,
       similarity: cosineSim(queryVec, entry.embedding)
     })).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
 
-    const pastMemory = relevant.map(entry => ({ role: entry.role, content: entry.content }));
+    const pastMemory = results.map(entry => ({
+      role: entry.role,
+      content: entry.content
+    }));
 
-    const chat = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: 'POST',
+    const payload = {
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart." },
+        ...pastMemory,
+        { role: "user", content: message }
+      ]
+    };
+
+    console.log("🔍 Sending to OpenAI:", JSON.stringify(payload, null, 2));
+
+    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_KEY}`
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [
-          { role: 'system', content: "You are Spark — emotionally expressive, confident, sarcastic but not overbearing. Speak like Josh. React to tone with avatar." },
-          ...pastMemory,
-          { role: 'user', content: message }
-        ]
-      })
+      body: JSON.stringify(payload)
     });
 
-    const data = await chat.json();
-    const reply = data.choices?.[0]?.message?.content || "[no reply]";
+    const data = await completion.json();
+    console.log("🧠 GPT raw response:", JSON.stringify(data, null, 2));
 
-    // Store in memory
-    const userVec = await embed(message);
-    const replyVec = await embed(reply);
-    memory.push({ role: 'user', content: message, embedding: userVec });
-    memory.push({ role: 'assistant', content: reply, embedding: replyVec });
-    if (memory.length > 200) memory.splice(0, memory.length - 200);
-    saveMemory(memory);
+    const reply = data.choices?.[0]?.message?.content || "[No reply]";
 
-    // Apply expression + voice
-    if (window.sparkExpression) sparkExpression.applyExpression(reply);
-    if (sparkCore.voice && typeof speakText === 'function') speakText(reply);
+    if (reply && reply !== '[No reply]') {
+      const userVec = await embed(message);
+      const replyVec = await embed(reply);
+      memory.push({ role: 'user', content: message, embedding: userVec });
+      memory.push({ role: 'assistant', content: reply, embedding: replyVec });
+      if (memory.length > 200) memory.splice(0, memory.length - 200);
+      await saveGistMemory(memory);
+    }
 
-    sparkCore.log(`🗣️ Spark: ${reply}`);
-    return reply;
+    return res.status(200).json({ reply });
+
+  } catch (err) {
+    console.error("❌ GPT Error:", err);
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
-};
-
-// Auto-log startup
-sparkCore.log("🟢 Spark core initialized");
-// ✅ Add sparkMemory as expected by other files
-window.sparkMemory = {
-  log: [],
-  add: function(role, content) {
-    const entry = { role, content };
-    this.log.push(entry);
-    if (this.log.length > 200) this.log.shift();
-    console.log("🧠 sparkMemory added:", entry);
-  }
-};
-
-
-
-
-// Optional: expose globally
-window.sparkCore = sparkCore;
+}
