@@ -1,68 +1,138 @@
-// === sparkcore.js ===
-
-// This version is safe for client-side use — no export/import syntax.
-// It creates a global `sparkMemory` object that can be called from the DOM.
-
-const OPENAI_API_KEY = document.querySelector('meta[name="openai-key"]')?.content || "";
-
-window.sparkMemory = {
-  memory: [],
-
-  async embed(text) {
-    try {
-      if (!OPENAI_API_KEY) throw new Error("Missing API Key");
-      const res = await fetch("https://api.openai.com/v1/embeddings", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + OPENAI_API_KEY
-        },
-        body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
-      });
-      const json = await res.json();
-      return (json.data && json.data[0] && json.data[0].embedding) || [];
-    } catch (e) {
-      console.warn('⚠️ Embedding failed:', e);
-      return [];
+<!DOCTYPE html><html lang="en">
+$1<meta name="openai-key" content="__VERCEL_API_KEY__" />
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spark Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-  },
-
-  cosineSim(a, b) {
-    const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-    const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-    const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-    return dot / (magA * magB);
-  },
-
-  async add(role, content) {
-    const embedding = await this.embed(content);
-    this.memory.push({ role, content, embedding, time: Date.now() });
-    if (this.memory.length > 200) this.memory.shift();
-    this.save();
-  },
-
-  async searchRelevant(query, topN = 5) {
-    const queryVector = await this.embed(query);
-    const results = this.memory.map(entry => ({
-      ...entry,
-      similarity: this.cosineSim(queryVector, entry.embedding)
-    }));
-    return results.sort((a, b) => b.similarity - a.similarity).slice(0, topN);
-  },
-
-  save() {
-    localStorage.setItem('sparkVectorMemory', JSON.stringify(this.memory));
-  },
-
-  load() {
-    try {
-      const data = localStorage.getItem('sparkVectorMemory');
-      if (data) this.memory = JSON.parse(data);
-    } catch (e) {
-      console.warn('⚠️ Failed to load vector memory:', e);
+    #avatarImage {
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      margin-top: 20px;
+      object-fit: cover;
+      box-shadow: 0 0 20px #0ff;
     }
-  }
-};
+    .pulse {
+      animation: pulse 1s ease-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
+      50% { transform: scale(1.05); box-shadow: 0 0 40px #0ff; }
+      100% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
+    }
+    #chat {
+      width: 90%;
+      max-width: 500px;
+      height: 150px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-top: 1rem;
+    }
+    #input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      width: 90%;
+      max-width: 500px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 1rem;
+      background: #222;
+      color: #eee;
+      border: none;
+    }
+    button {
+      padding: 10px;
+      background: #333;
+      color: #eee;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+  </style>
+  <script src="sparkcore.js"></script>
+  <script src="voice.js"></script>
+  <script src="mic.js"></script>
+</head>
+<body>
+  <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
+  <div id="chat"></div>
+  <div id="input">
+    <button onclick="startMic()">🎤</button>
+    <input type="text" id="userInput" placeholder="Say something...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const chatBox = document.getElementById('chat');
+      const input = document.getElementById('userInput');
 
-// Boot memory on page load
-window.sparkMemory.load();
+      function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const message = input.value.trim();
+        if (!message) return;
+
+        appendMessage('you', message);
+        input.value = '';
+        appendMessage('spark', '...thinking');
+
+        try {
+          const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
+
+          const data = await res.json();
+          const reply = data.reply || '[no reply]';
+          chatBox.lastChild.remove();
+          appendMessage('spark', reply);
+          sparkVoice.speak(reply);
+
+          const avatar = document.getElementById('avatarImage');
+          if (avatar) {
+            avatar.classList.add('pulse');
+            setTimeout(() => avatar.classList.remove('pulse'), 1000);
+          }
+        } catch (err) {
+          chatBox.lastChild.remove();
+          appendMessage('spark', '⚠️ error talking to GPT');
+          console.error('❌ GPT fetch failed:', err);
+          appendMessage('spark', `⚠️ ${err.message || 'Unknown error occurred'}`);
+        }
+      }
+
+      function startMic() {
+        sparkMic.start();
+      }
+
+      window.sendMessage = sendMessage;
+      window.startMic = startMic;
+    });
+  </script>
+</body>
+</html>
