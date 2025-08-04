@@ -127,7 +127,6 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ reply: reply });
-
   } catch (err) {
     console.error("GPT Error:", err);
     return res.status(500).json({ error: 'Internal Server Error' });
