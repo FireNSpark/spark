@@ -1,73 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minimal Spark Test</title>
-  <style>
-    body {
-      background: #111;
-      color: #eee;
-      font-family: sans-serif;
-      padding: 2rem;
-    }
-    #chat-box {
-      border: 1px solid #444;
-      padding: 1rem;
-      height: 300px;
-      overflow-y: auto;
-      margin-bottom: 1rem;
-    }
-    #chat-box div {
-      margin-bottom: 0.5rem;
-    }
-    #chat-input {
-      width: 80%;
-      padding: 0.5rem;
-      background: #222;
-      color: white;
-      border: none;
-    }
-    #send-btn {
-      padding: 0.5rem 1rem;
-      background: #555;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spark 3.0</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Spark Reset</h1>
-  <div id="chat-box"></div>
-  <input id="chat-input" type="text" placeholder="Type something...">
-  <button id="send-btn">Send</button>
-
-  <script>
-    const chatBox = document.getElementById('chat-box');
-    const input = document.getElementById('chat-input');
-    const send = document.getElementById('send-btn');
-
-    function display(text, cls) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      if (cls) div.className = cls;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function handleSend() {
-      const val = input.value.trim();
-      if (!val) return;
-      display(`You: ${val}`, 'user');
-      input.value = '';
-      setTimeout(() => display("Spark: I see you.", 'spark'), 500);
-    }
-
-    send.onclick = handleSend;
-    input.onkeydown = (e) => e.key === 'Enter' && handleSend();
-
-    display("Spark: Ready.", 'spark');
-  </script>
+  <div id="container">
+    <div id="avatar-panel">
+      <div id="avatar" class="avatar">⚡</div>
+      <button id="voice-btn">🔊</button>
+    </div>
+    <div id="chat-panel">
+      <div id="chat-box"></div>
+      <div id="input-row">
+        <input id="chat-input" type="text" placeholder="Talk to Spark..." />
+        <button id="send-btn">➤</button>
+      </div>
+    </div>
+  </div>
+  <script src="sparkcore.js"></script>
 </body>
 </html>
