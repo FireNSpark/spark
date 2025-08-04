@@ -109,6 +109,7 @@
           });
 
           const data = await res.json();
+          console.log("🧠 GPT raw response:", data);
           const reply = data.reply || '[no reply]';
           chatBox.lastChild.remove();
           appendMessage('spark', reply);
