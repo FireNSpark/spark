@@ -108,6 +108,12 @@
             body: JSON.stringify({ message })
           });
 
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error("❌ GPT fetch error:", res.status, errorText);
+            throw new Error("Bad response from GPT API");
+          }
+
           const data = await res.json();
           console.log("🧠 GPT raw response:", data);
           const reply = data.reply ?? JSON.stringify(data, null, 2);
