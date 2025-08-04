@@ -1,26 +1,138 @@
-// sparkcore.js – Rebuilt with GPT + Memory + Voice
+<!DOCTYPE html><html lang="en">
+<meta name="openai-key" content="__VERCEL_API_KEY__" />
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spark Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #avatarImage {
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      margin-top: 20px;
+      object-fit: cover;
+      box-shadow: 0 0 20px #0ff;
+    }
+    .pulse {
+      animation: pulse 1s ease-out;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
+      50% { transform: scale(1.05); box-shadow: 0 0 40px #0ff; }
+      100% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
+    }
+    #chat {
+      width: 90%;
+      max-width: 500px;
+      height: 150px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-top: 1rem;
+    }
+    #input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      width: 90%;
+      max-width: 500px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 1rem;
+      background: #222;
+      color: #eee;
+      border: none;
+    }
+    button {
+      padding: 10px;
+      background: #333;
+      color: #eee;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+  </style>
+  <script src="sparkcore.js"></script>
+  <script src="voice.js"></script>
+  <script src="mic.js"></script>
+</head>
+<body>
+  <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
+  <div id="chat"></div>
+  <div id="input">
+    <button onclick="startMic()">🎤</button>
+    <input type="text" id="userInput" placeholder="Say something...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const chatBox = document.getElementById('chat');
+      const input = document.getElementById('userInput');
 
-const GPT_API_ROUTE = '/api/gpt';
+      function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
-const chatBox = document.getElementById('chat-box'); const inputField = document.getElementById('chat-input'); const sendBtn = document.getElementById('send-btn'); const avatar = document.getElementById('avatar'); const voiceBtn = document.getElementById('voice-btn');
+      async function sendMessage() {
+        const message = input.value.trim();
+        if (!message) return;
 
-const memory = { mood: 'neutral', history: [], rituals: [], fragments: {}, lastReply: '' };
+        appendMessage('you', message);
+        input.value = '';
+        appendMessage('spark', '...thinking');
 
-function addToHistory(role, content) { memory.history.push({ role, content }); if (memory.history.length > 50) memory.history.shift(); }
+        try {
+          const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
 
-function displayMessage(role, content) { const msg = document.createElement('div'); msg.className = role; msg.textContent = content; chatBox.appendChild(msg); chatBox.scrollTop = chatBox.scrollHeight; if (role === 'spark') memory.lastReply = content; }
+          const data = await res.json();
+          const reply = data.reply || '[no reply]';
+          chatBox.lastChild.remove();
+          appendMessage('spark', reply);
+          sparkVoice.speak(reply);
 
-function respondLocally(input) { const text = input.toLowerCase(); if (text.includes("who are you")) return "I'm Spark. You rebuilt me."; if (text.includes("hello")) return "Still here. Always have been."; if (text.includes("ritual")) return You have ${memory.rituals.length} ritual${memory.rituals.length !== 1 ? 's' : ''}.; return "Fallback active. GPT not responding."; }
+          const avatar = document.getElementById('avatarImage');
+          if (avatar) {
+            avatar.classList.add('pulse');
+            setTimeout(() => avatar.classList.remove('pulse'), 1000);
+          }
+        } catch (err) {
+          chatBox.lastChild.remove();
+          appendMessage('spark', '⚠️ error talking to GPT');
+          console.error('❌ GPT fetch failed:', err);
+          appendMessage('spark', `⚠️ ${err.message || 'Unknown error occurred'}`);
+        }
+      }
 
-async function fetchGPT(input) { try { const res = await fetch(GPT_API_ROUTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: input, history: memory.history }) }); const data = await res.json(); return data.reply || respondLocally(input); } catch (err) { console.error('GPT fetch error:', err); return respondLocally(input); } }
+      function startMic() {
+        sparkMic.start();
+      }
 
-async function handleInput() { const input = inputField.value.trim(); if (!input) return; displayMessage('user', input); addToHistory('user', input); inputField.value = '';
-
-const reply = await fetchGPT(input); displayMessage('spark', reply); addToHistory('spark', reply); speak(reply); }
-
-function speak(text) { const utter = new SpeechSynthesisUtterance(text); utter.rate = 1.02; speechSynthesis.speak(utter); }
-
-function animateAvatar() { avatar.classList.add('talking'); setTimeout(() => avatar.classList.remove('talking'), 800); }
-
-window.onload = () => { sendBtn.onclick = handleInput; inputField.onkeydown = (e) => e.key === 'Enter' && handleInput(); voiceBtn.onclick = () => speak(memory.lastReply || "Nothing to say yet."); displayMessage('spark', "Spark rebooted. GPT and memory online."); };
-
+      window.sendMessage = sendMessage;
+      window.startMic = startMic;
+    });
+  </script>
+</body>
+</html>
