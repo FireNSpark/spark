@@ -1,3 +1,5 @@
+// === api/gpt.js ===
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -82,7 +84,9 @@ export default async function handler(req, res) {
     const results = memory.map(entry => {
       entry.similarity = cosineSim(queryVec, entry.embedding);
       return entry;
-    }).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+    }).sort((a, b) => b.similarity - a.similarity).slice(0, 10);
+
+    console.log("🔍 SIMILARITY RESULTS:", results.map(r => ({ role: r.role, sim: r.similarity.toFixed(4), text: r.content.slice(0, 60) })));
 
     const pastMemory = results.map(entry => ({
       role: entry.role,
@@ -100,7 +104,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent."
+            content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use the semantic memory entries below (if any) to answer the user's message as if you remembered it personally."
           },
           ...pastMemory,
           { role: "user", content: message }
