@@ -18,7 +18,8 @@ const sparkMic = {
     };
 
     recognition.onerror = (event) => {
-      console.error("Mic error:", event);
+      console.error("Mic error:", event.error || event);
+      alert("Mic error: " + (event.error || "unknown"));
     };
 
     recognition.start();
