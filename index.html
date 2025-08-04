@@ -71,6 +71,7 @@
   <script src="sparkcore.js"></script>
   <script src="voice.js"></script>
   <script src="mic.js"></script>
+  <script src="memory.js"></script>
 </head>
 <body>
   <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
@@ -97,7 +98,7 @@
         if (!message) return;
 
         appendMessage('you', message);
-        sparkMemory.add('user', message);
+        sparkMemory?.add('user', message);
         input.value = '';
         appendMessage('spark', '...thinking');
 
@@ -112,7 +113,7 @@
           const reply = data.reply || '[no reply]';
           chatBox.lastChild.remove();
           appendMessage('spark', reply);
-          sparkMemory.add('assistant', reply);
+          sparkMemory?.add('assistant', reply);
           sparkVoice.speak(reply);
 
           const avatar = document.getElementById('avatarImage');
