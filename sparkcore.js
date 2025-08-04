@@ -3,16 +3,19 @@
 // This version is safe for client-side use — no export/import syntax.
 // It creates a global `sparkMemory` object that can be called from the DOM.
 
+const OPENAI_API_KEY = localStorage.getItem("OPENAI_API_KEY") || "";
+
 window.sparkMemory = {
   memory: [],
 
   async embed(text) {
     try {
+      if (!OPENAI_API_KEY) throw new Error("Missing API Key");
       const res = await fetch("https://api.openai.com/v1/embeddings", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}` // must be exposed securely if frontend
+          'Authorization': 'Bearer ' + OPENAI_API_KEY
         },
         body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
       });
