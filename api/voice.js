@@ -5,6 +5,7 @@ export default async function handler(req, res) {
 
   const { text } = req.body;
   const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = "ijdvK10rhhVda9QPsfHN";
 
   console.log("🔑 ELEVENLABS_API_KEY present:", !!apiKey);
   console.log("📝 Incoming text:", text);
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/ijdvK10rhhVda9QPsfHN/stream", {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
       headers: {
         "xi-api-key": apiKey,
