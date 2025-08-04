@@ -16,7 +16,7 @@ const sparkVoice = {
   },
 
   speak(text) {
-    if (!sparkCore.voice || !sparkVoice.voiceEnabled) return;
+    if (!sparkVoice.voiceEnabled) return;
 
     sparkVoice.stop(); // cancel any ongoing speech
 
