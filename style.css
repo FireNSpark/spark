@@ -78,6 +78,8 @@ body {
   border: none;
   color: white;
   outline: none;
+  z-index: 2;
+  position: relative;
 }
 
 #send-btn, #voice-btn {
