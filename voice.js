@@ -1,50 +1,30 @@
 // === voice.js ===
-// Spark voice engine customized to sound like user
 
-const sparkVoice = {
-  voiceEnabled: true,
-  currentUtterance: null,
-  profile: {
-    rate: 0.95,
-    pitch: 1.1,
-    volume: 1.0,
-    lang: 'en-US',
-    energy: 'direct + witty',
-    attitude: 'confident with sarcasm',
-    inflection: 'upward emphasis, mid-sentence pauses',
-    vocalPersona: 'Josh — sharp, expressive, emotionally reactive'
-  },
+// Simple voice system to support real voice playback and sync (Wav2Lip-ready)
 
-  speak(text) {
-    if (!sparkVoice.voiceEnabled) return;
+let sparkVoice = {
+  speak: async function(text) {
+    console.log("🗣️ Speaking:", text);
 
-    sparkVoice.stop(); // cancel any ongoing speech
+    const audio = new Audio();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = sparkVoice.profile.rate;
-    utterance.pitch = sparkVoice.profile.pitch;
-    utterance.volume = sparkVoice.profile.volume;
-    utterance.lang = sparkVoice.profile.lang;
+    // Call backend or local service that generates speech using user's real voice
+    const res = await fetch('/api/voice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
 
-    sparkVoice.currentUtterance = utterance;
-    speechSynthesis.speak(utterance);
-  },
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    audio.play();
 
-  stop() {
-    if (speechSynthesis.speaking) {
-      speechSynthesis.cancel();
+    // Trigger avatar lip sync if available
+    const avatar = document.getElementById("avatarImage");
+    if (avatar && avatar.classList) {
+      avatar.classList.add("talking");
+      audio.onended = () => avatar.classList.remove("talking");
     }
-    sparkVoice.currentUtterance = null;
-  },
-
-  toggle() {
-    sparkVoice.voiceEnabled = !sparkVoice.voiceEnabled;
-    console.log(`Voice ${sparkVoice.voiceEnabled ? 'enabled' : 'muted'}`);
-  },
-
-  test() {
-    sparkVoice.speak("This is Spark — now sounding a lot more like you.");
   }
 };
-
-window.sparkVoice = sparkVoice;
