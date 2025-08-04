@@ -4,7 +4,6 @@ let sparkVoice = {
   speak: async function(text) {
     console.log("🗣️ Speaking:", text);
 
-    const audio = new Audio();
     try {
       const res = await fetch('/api/voice', {
         method: 'POST',
@@ -20,15 +19,15 @@ let sparkVoice = {
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      audio.src = url;
-      audio.play();
+      const audio = new Audio(URL.createObjectURL(blob));
 
       const avatar = document.getElementById("avatarImage");
       if (avatar?.classList) {
         avatar.classList.add("talking");
         audio.onended = () => avatar.classList.remove("talking");
       }
+
+      audio.play();
     } catch (err) {
       console.error("💥 Voice client crash:", err);
       alert("💥 Voice error: " + err.message);
