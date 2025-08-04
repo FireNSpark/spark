@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!text) return res.status(400).json({ error: 'Missing text' });
 
   try {
-    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/default/stream", {
+    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/ijdvK10rhhVda9QPsfHN/stream", {
       method: "POST",
       headers: {
         "xi-api-key": process.env.ELEVENLABS_API_KEY,
