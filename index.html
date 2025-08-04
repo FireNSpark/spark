@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8">
+$1<meta name="openai-key" content="__VERCEL_API_KEY__" />
+<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spark Assistant</title>
   <style>
@@ -136,26 +136,7 @@
       window.sendMessage = sendMessage;
       window.startMic = startMic;
 
-      // Show API key input prompt if missing
-      if (!localStorage.getItem("OPENAI_API_KEY")) {
-        const inputBox = document.createElement("input");
-        inputBox.placeholder = "Enter OpenAI API Key";
-        inputBox.style = "position:fixed;top:10px;left:10px;z-index:1000;padding:5px;";
-
-        const button = document.createElement("button");
-        button.innerText = "Save Key";
-        button.style = "margin-left:5px;padding:5px;";
-        button.onclick = () => {
-          localStorage.setItem("OPENAI_API_KEY", inputBox.value);
-          alert("API Key saved. Refresh page.");
-          inputBox.remove();
-          button.remove();
-        };
-
-        document.body.appendChild(inputBox);
-        document.body.appendChild(button);
-      }
-    });
+      
   </script>
 </body>
 </html>
