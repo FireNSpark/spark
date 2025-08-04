@@ -16,9 +16,9 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    const GIST_ID = process && process.env && process.env.GIST_ID;
-    const GITHUB_TOKEN = process && process.env && process.env.GITHUB_TOKEN;
-    const OPENAI_API_KEY = process && process.env && process.env.OPENAI_API_KEY;
+    const GIST_ID = process.env.GIST_ID;
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const FILENAME = 'spark-memory.json';
 
     if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
@@ -106,11 +106,13 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
+          },
+          ...pastMemory,
+          {
+            role: "user",
+            content: message
           }
-        ].concat(pastMemory).concat([{
-          role: "user",
-          content: message
-        }])
+        ]
       })
     });
 
@@ -126,7 +128,7 @@ export default async function handler(req, res) {
       await saveGistMemory(memory);
     }
 
-    return res.status(200).json({ reply: reply });
+    return res.status(200).json({ reply });
   } catch (err) {
     console.error("GPT Error:", err);
     return res.status(500).json({ error: 'Internal Server Error' });
