@@ -1,43 +1,46 @@
-// === voice.js ===
+// === /api/voice.js ===
 
-let sparkVoice = {
-  speak: async function(text) {
-    console.log("🗣️ Speaking:", text);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
 
-    const audio = new Audio();
-    try {
-      const res = await fetch('/api/voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
+  const { text } = req.body;
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = "ijdvK10rhhVda9QPsfHN";
 
-      if (!res.ok) {
-        const err = await res.json();
-        console.error("❌ Voice API Error:", err);
-        alert("🔇 Voice failed: " + (err.details || err.error || 'Unknown error'));
-        return;
-      }
+  console.log("🧪 ELEVENLABS TEST:", { hasText: !!text, hasKey: !!apiKey });
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      audio.src = url;
-      audio.play();
-
-      const avatar = document.getElementById("avatarImage");
-      if (avatar?.classList) {
-        avatar.classList.add("talking");
-        audio.onended = () => avatar.classList.remove("talking");
-      }
-    } catch (err) {
-      console.error("💥 Voice client crash:", err);
-      alert("💥 Voice error: " + err.message);
-    }
+  if (!apiKey || !text) {
+    return res.status(400).json({ error: 'Missing API key or input text.' });
   }
-};
 
-// === Auto speak on GPT reply ===
-window.addEventListener("GPTReply", (e) => {
-  const msg = e.detail;
-  if (msg && typeof msg === "string") sparkVoice.speak(msg);
-});
+  try {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        voice_settings: { stability: 0.3, similarity_boost: 0.75 }
+      }),
+    });
+
+    console.log("📡 Eleven Response Status:", response.status);
+    const contentType = response.headers.get("content-type");
+    console.log("📼 Content-Type:", contentType);
+
+    if (!response.ok || !contentType.includes("audio")) {
+      const errorText = await response.text();
+      console.error("❌ Eleven API Error:", errorText);
+      return res.status(500).json({ error: "Voice generation failed", details: errorText });
+    }
+
+    const audio = await response.arrayBuffer();
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(audio));
+  } catch (err) {
+    console.error("💥 Voice Handler Crash:", err);
+    res.status(500).json({ error: "Unexpected error", message: err.message });
+  }
+}
