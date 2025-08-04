@@ -16,9 +16,9 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    const GIST_ID = process?.env?.GIST_ID;
-    const GITHUB_TOKEN = process?.env?.GITHUB_TOKEN;
-    const OPENAI_API_KEY = process?.env?.OPENAI_API_KEY;
+    const GIST_ID = process && process.env && process.env.GIST_ID;
+    const GITHUB_TOKEN = process && process.env && process.env.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process && process.env && process.env.OPENAI_API_KEY;
     const FILENAME = 'spark-memory.json';
 
     if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
@@ -26,9 +26,9 @@ export default async function handler(req, res) {
     }
 
     const fetchGistMemory = async () => {
-      const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      const res = await fetch("https://api.github.com/gists/" + GIST_ID, {
         headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Authorization: "Bearer " + GITHUB_TOKEN,
           Accept: "application/vnd.github.v3+json"
         }
       });
@@ -38,10 +38,10 @@ export default async function handler(req, res) {
     };
 
     const saveGistMemory = async (memory) => {
-      await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      await fetch("https://api.github.com/gists/" + GIST_ID, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Authorization: "Bearer " + GITHUB_TOKEN,
           Accept: "application/vnd.github.v3+json",
           "Content-Type": "application/json"
         },
@@ -53,43 +53,52 @@ export default async function handler(req, res) {
       });
     };
 
-    const embed = async (text) => {
+    const embed = async function (text) {
       const res = await fetch("https://api.openai.com/v1/embeddings", {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + OPENAI_API_KEY
         },
-        body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
+        body: JSON.stringify({ input: text, model: "text-embedding-3-small" })
       });
       const json = await res.json();
       return (json.data && json.data[0] && json.data[0].embedding) || [];
     };
 
-    const cosineSim = (a, b) => {
-      const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-      const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-      const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-      return dot / (magA * magB);
+    const cosineSim = function (a, b) {
+      var dot = 0;
+      var magA = 0;
+      var magB = 0;
+      for (var i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        magA += a[i] * a[i];
+        magB += b[i] * b[i];
+      }
+      return dot / (Math.sqrt(magA) * Math.sqrt(magB));
     };
 
     const memory = await fetchGistMemory();
     const queryVec = await embed(message);
-    const results = memory.map(entry => ({
-      ...entry,
-      similarity: cosineSim(queryVec, entry.embedding)
-    })).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+    const results = memory.map(function (entry) {
+      entry.similarity = cosineSim(queryVec, entry.embedding);
+      return entry;
+    }).sort(function (a, b) {
+      return b.similarity - a.similarity;
+    }).slice(0, 5);
 
-    const pastMemory = results.map(entry => ({
-      role: entry.role,
-      content: entry.content
-    }));
+    const pastMemory = results.map(function (entry) {
+      return {
+        role: entry.role,
+        content: entry.content
+      };
+    });
 
     const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
+        "Authorization": "Bearer " + OPENAI_API_KEY
       },
       body: JSON.stringify({
         model: "gpt-4",
@@ -97,13 +106,11 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: "You are Invoke — a confident, emotionally expressive AI assistant who talks like Josh. Use semantic memory below to stay personal, consistent, and intelligent. Keep sarcasm sparing and smart."
-          },
-          ...pastMemory,
-          {
-            role: "user",
-            content: message
           }
-        ]
+        ].concat(pastMemory).concat([{
+          role: "user",
+          content: message
+        }])
       })
     });
 
@@ -119,10 +126,10 @@ export default async function handler(req, res) {
       await saveGistMemory(memory);
     }
 
-    return res.status(200).json({ reply });
+    return res.status(200).json({ reply: reply });
 
   } catch (err) {
     console.error("GPT Error:", err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+} // ← this was missing
