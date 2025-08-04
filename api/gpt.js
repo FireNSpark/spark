@@ -16,10 +16,14 @@ export default async function handler(req, res) {
   try {
     const { message } = req.body;
 
-    const GIST_ID = process.env.GIST_ID;
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const GIST_ID = process?.env?.GIST_ID;
+    const GITHUB_TOKEN = process?.env?.GITHUB_TOKEN;
+    const OPENAI_API_KEY = process?.env?.OPENAI_API_KEY;
     const FILENAME = 'spark-memory.json';
+
+    if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
+      return res.status(400).json({ error: 'Missing required environment variables or input' });
+    }
 
     const fetchGistMemory = async () => {
       const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -29,7 +33,7 @@ export default async function handler(req, res) {
         }
       });
       const data = await res.json();
-      const raw = data.files?.[FILENAME]?.content;
+      const raw = data.files && data.files[FILENAME] && data.files[FILENAME].content;
       return raw ? JSON.parse(raw) : [];
     };
 
@@ -59,7 +63,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ input: text, model: 'text-embedding-3-small' })
       });
       const json = await res.json();
-      return json.data?.[0]?.embedding || [];
+      return (json.data && json.data[0] && json.data[0].embedding) || [];
     };
 
     const cosineSim = (a, b) => {
@@ -104,7 +108,7 @@ export default async function handler(req, res) {
     });
 
     const data = await completion.json();
-    const reply = data.choices?.[0]?.message?.content || "[No reply]";
+    const reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "[No reply]";
 
     if (reply && reply !== '[No reply]') {
       const userVec = await embed(message);
