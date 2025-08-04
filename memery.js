@@ -1,4 +1,4 @@
-// memery.js — Local fallback state + rituals
+// memery.js — Rituals, fragments, mood, fallback state
 
 export const memory = {
   mood: 'neutral',
@@ -24,8 +24,8 @@ export function getMood() {
   return memory.mood;
 }
 
-export function setMood(m) {
-  memory.mood = m;
+export function setMood(newMood) {
+  memory.mood = newMood;
 }
 
 export function respondLocally(input) {
