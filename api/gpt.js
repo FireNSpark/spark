@@ -119,13 +119,17 @@ export default async function handler(req, res) {
       })
     });
 
+    console.log("📡 GPT Response Status:", completion.status);
+    console.log("📬 GPT Headers:", [...completion.headers.entries()]);
+
+    const raw = await completion.text();
+    console.log("📥 RAW COMPLETION TEXT:", raw);
+
     let data;
     try {
-      data = await completion.json();
-      console.log("🧠 RAW GPT RESPONSE:", data);
+      data = JSON.parse(raw);
     } catch (e) {
-      const raw = await completion.text();
-      console.error("❌ GPT response not JSON:", raw);
+      console.error("❌ GPT JSON parse failed:", e);
       return res.status(500).json({ error: "Non-JSON GPT response", raw });
     }
 
