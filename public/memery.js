@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
     const GIST_ID = process.env.GIST_ID;
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY || localStorage.getItem("OPENAI_API_KEY");
     const FILENAME = 'spark-memory.json';
 
     const fetchGistMemory = async () => {
@@ -119,6 +119,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error("GPT Error:", err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
