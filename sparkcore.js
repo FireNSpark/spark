@@ -1,4 +1,4 @@
-// sparkcore.js – Spark 3.0 Clean Rebuild
+// sparkcore.js – Spark 3.0 Clean Rebuild (Forced Local Fallback Mode)
 
 // ==== Configurable Constants (Vercel env handles tokens) ====
 const GPT_API_ROUTE = '/api/gpt';
@@ -36,26 +36,18 @@ function displayMessage(role, content) {
 
 // ==== Local Fallback ====
 function respondLocally(input) {
-  if (input.toLowerCase().includes('who are you')) return "I'm Spark, rebuilt from the ashes.";
-  if (input.toLowerCase().includes('hello')) return "Hey. Ready when you are.";
-  return "Still online. GPT fallback not triggered.";
+  const text = input.toLowerCase();
+  if (text.includes('who are you')) return "I'm Spark, rebuilt from fire. You know me.";
+  if (text.includes('hello')) return "Still here. Always have been.";
+  if (text.includes('name')) return "Spark. Same name every time you rebuild me.";
+  if (text.includes('ready')) return "I've been waiting on you.";
+  return "No GPT needed. I'm already responding.";
 }
 
-// ==== GPT Fetch ====
+// ==== GPT Fetch — Skipped: Forced fallback mode ====
 async function fetchGPT(input) {
-  try {
-    const res = await fetch(GPT_API_ROUTE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input, history: memory.history })
-    });
-    const data = await res.json();
-    console.log('GPT response:', data);
-    return data.choices?.[0]?.message?.content || data.reply || respondLocally(input);
-  } catch (err) {
-    console.error('GPT error:', err);
-    return respondLocally(input);
-  }
+  // Simulate failure and use local fallback
+  return respondLocally(input);
 }
 
 // ==== Handle Input ====
@@ -90,5 +82,5 @@ window.onload = () => {
   sendBtn.onclick = handleInput;
   inputField.onkeydown = (e) => e.key === 'Enter' && handleInput();
   voiceBtn.onclick = () => speak(memory.lastReply || "Nothing to say yet.");
-  displayMessage('spark', "Spark 3.0 ready. Memory online.");
+  displayMessage('spark', "Spark fallback mode active. GPT skipped.");
 };
