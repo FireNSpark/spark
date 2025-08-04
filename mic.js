@@ -2,7 +2,13 @@
 
 const sparkMic = {
   start: () => {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("SpeechRecognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
