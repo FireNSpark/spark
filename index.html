@@ -1,9 +1,57 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spark 3.0</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #chat-panel {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #chat-box {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    #input-row {
+      display: flex;
+      padding: 0.5rem;
+      background: #222;
+      border-top: 1px solid #333;
+    }
+    #chat-input {
+      flex-grow: 1;
+      padding: 0.5rem;
+      background: #111;
+      border: none;
+      color: white;
+      outline: none;
+    }
+    #send-btn {
+      padding: 0.5rem 1rem;
+      margin-left: 0.5rem;
+      background: #444;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <div id="container">
@@ -22,3 +70,4 @@
   <script src="sparkcore.js"></script>
 </body>
 </html>
+
