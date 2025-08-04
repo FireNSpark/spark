@@ -28,6 +28,7 @@ export default async function handler(req, res) {
     const buffer = await response.arrayBuffer();
 
     res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Disposition", "inline; filename=voice.mp3");
     res.status(200).send(Buffer.from(buffer));
   } catch (err) {
     console.error("🎤 Voice generation failed:", err);
