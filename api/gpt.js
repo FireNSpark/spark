@@ -22,7 +22,15 @@ export default async function handler(req, res) {
     const FILENAME = 'spark-memory.json';
 
     if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
-      return res.status(400).json({ error: 'Missing required environment variables or input' });
+      return res.status(400).json({
+        error: 'Missing required environment variables or input',
+        env: {
+          GIST_ID: !!GIST_ID,
+          GITHUB_TOKEN: !!GITHUB_TOKEN,
+          OPENAI_API_KEY: !!OPENAI_API_KEY
+        },
+        input: { messagePresent: !!message }
+      });
     }
 
     const fetchGistMemory = async () => {
