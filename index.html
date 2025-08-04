@@ -81,53 +81,59 @@
     <button onclick="sendMessage()">Send</button>
   </div>
   <script>
-    const chatBox = document.getElementById('chat');
-    const input = document.getElementById('userInput');function appendMessage(sender, text) {
-  const msg = document.createElement('div');
-  msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-  chatBox.appendChild(msg);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+    window.addEventListener('DOMContentLoaded', () => {
+      const chatBox = document.getElementById('chat');
+      const input = document.getElementById('userInput');
 
-async function sendMessage() {
-  const message = input.value.trim();
-  if (!message) return;
+      function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
 
-  appendMessage('you', message);
-  sparkMemory.add('user', message);
-  input.value = '';
-  appendMessage('spark', '...thinking');
+      async function sendMessage() {
+        const message = input.value.trim();
+        if (!message) return;
 
-  try {
-    const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+        appendMessage('you', message);
+        sparkMemory.add('user', message);
+        input.value = '';
+        appendMessage('spark', '...thinking');
+
+        try {
+          const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
+
+          const data = await res.json();
+          const reply = data.reply || '[no reply]';
+          chatBox.lastChild.remove();
+          appendMessage('spark', reply);
+          sparkMemory.add('assistant', reply);
+          sparkVoice.speak(reply);
+
+          const avatar = document.getElementById('avatarImage');
+          if (avatar) {
+            avatar.classList.add('pulse');
+            setTimeout(() => avatar.classList.remove('pulse'), 1000);
+          }
+        } catch (err) {
+          chatBox.lastChild.remove();
+          appendMessage('spark', '⚠️ error talking to GPT');
+          console.error(err);
+        }
+      }
+
+      function startMic() {
+        sparkMic.start();
+      }
+
+      window.sendMessage = sendMessage;
+      window.startMic = startMic;
     });
-
-    const data = await res.json();
-    const reply = data.reply || '[no reply]';
-    chatBox.lastChild.remove();
-    appendMessage('spark', reply);
-    sparkMemory.add('assistant', reply);
-    sparkVoice.speak(reply);
-
-    const avatar = document.getElementById('avatarImage');
-    if (avatar) {
-      avatar.classList.add('pulse');
-      setTimeout(() => avatar.classList.remove('pulse'), 1000);
-    }
-  } catch (err) {
-    chatBox.lastChild.remove();
-    appendMessage('spark', '⚠️ error talking to GPT');
-    console.error(err);
-  }
-}
-
-function startMic() {
-  sparkMic.start();
-}
-
   </script>
 </body>
 </html>
