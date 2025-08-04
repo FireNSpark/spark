@@ -71,7 +71,6 @@ $1<meta name="openai-key" content="__VERCEL_API_KEY__" />
   <script src="sparkcore.js"></script>
   <script src="voice.js"></script>
   <script src="mic.js"></script>
-  <script src="memory.js"></script>
 </head>
 <body>
   <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
@@ -98,7 +97,6 @@ $1<meta name="openai-key" content="__VERCEL_API_KEY__" />
         if (!message) return;
 
         appendMessage('you', message);
-        sparkMemory?.add('user', message);
         input.value = '';
         appendMessage('spark', '...thinking');
 
@@ -113,7 +111,6 @@ $1<meta name="openai-key" content="__VERCEL_API_KEY__" />
           const reply = data.reply || '[no reply]';
           chatBox.lastChild.remove();
           appendMessage('spark', reply);
-          sparkMemory?.add('assistant', reply);
           sparkVoice.speak(reply);
 
           const avatar = document.getElementById('avatarImage');
@@ -135,8 +132,7 @@ $1<meta name="openai-key" content="__VERCEL_API_KEY__" />
 
       window.sendMessage = sendMessage;
       window.startMic = startMic;
-
-      
+    });
   </script>
 </body>
 </html>
