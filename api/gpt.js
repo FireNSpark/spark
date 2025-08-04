@@ -16,6 +16,12 @@ export default async function handler(req, res) {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const FILENAME = 'spark-memory.json';
 
+    console.log("🔧 ENV CHECK:", {
+      GIST_ID: !!GIST_ID,
+      GITHUB_TOKEN: !!GITHUB_TOKEN,
+      OPENAI_API_KEY: !!OPENAI_API_KEY
+    });
+
     if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
       return res.status(400).json({
         error: 'Missing required environment variables or input',
@@ -66,7 +72,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({ input: text, model: "text-embedding-3-small" })
       });
       const json = await res.json();
-      return (json.data && json.data[0] && json.data[0].embedding) || [];
+      if (!json.data || !json.data[0]) throw new Error("Embedding failed: " + JSON.stringify(json));
+      return json.data[0].embedding;
     };
 
     const cosineSim = function (a, b) {
@@ -114,6 +121,11 @@ export default async function handler(req, res) {
 
     const data = await completion.json();
     console.log("🧠 RAW GPT RESPONSE:", data);
+
+    if (!completion.ok) {
+      return res.status(500).json({ error: "GPT error", details: data });
+    }
+
     const reply = (data.choices?.[0]?.message?.content) || '[No reply]';
 
     if (reply && reply !== '[No reply]') {
@@ -127,7 +139,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ reply });
   } catch (err) {
-    console.error("GPT Memory Error:", err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("🔥 GPT Memory Fatal Error:", err);
+    return res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 }
