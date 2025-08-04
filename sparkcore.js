@@ -3,7 +3,7 @@
 // This version is safe for client-side use — no export/import syntax.
 // It creates a global `sparkMemory` object that can be called from the DOM.
 
-const OPENAI_API_KEY = localStorage.getItem("OPENAI_API_KEY") || "";
+const OPENAI_API_KEY = document.querySelector('meta[name="openai-key"]')?.content || "";
 
 window.sparkMemory = {
   memory: [],
