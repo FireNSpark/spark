@@ -70,9 +70,6 @@ async function handleInput() {
   speak(reply);
 }
 
-sendBtn.onclick = handleInput;
-inputField.onkeydown = (e) => e.key === 'Enter' && handleInput();
-
 // ==== Voice ====
 function speak(text) {
   const utter = new SpeechSynthesisUtterance(text);
@@ -87,4 +84,8 @@ function animateAvatar() {
 }
 
 // ==== Init ====
-displayMessage('spark', "Spark 3.0 ready. Memory online.");
+window.onload = () => {
+  sendBtn.onclick = handleInput;
+  inputField.onkeydown = (e) => e.key === 'Enter' && handleInput();
+  displayMessage('spark', "Spark 3.0 ready. Memory online.");
+};
