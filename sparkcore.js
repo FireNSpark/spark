@@ -17,6 +17,7 @@ const memory = {
   history: [],
   rituals: [],
   fragments: {},
+  lastReply: ''
 };
 
 function addToHistory(role, content) {
@@ -30,6 +31,7 @@ function displayMessage(role, content) {
   msg.textContent = content;
   chatBox.appendChild(msg);
   chatBox.scrollTop = chatBox.scrollHeight;
+  if (role === 'spark') memory.lastReply = content;
 }
 
 // ==== Local Fallback ====
@@ -47,9 +49,9 @@ async function fetchGPT(input) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input, history: memory.history })
     });
-    if (!res.ok) throw new Error('GPT fetch failed');
     const data = await res.json();
-    return data.reply || respondLocally(input);
+    console.log('GPT response:', data);
+    return data.choices?.[0]?.message?.content || data.reply || respondLocally(input);
   } catch (err) {
     console.error('GPT error:', err);
     return respondLocally(input);
@@ -87,5 +89,6 @@ function animateAvatar() {
 window.onload = () => {
   sendBtn.onclick = handleInput;
   inputField.onkeydown = (e) => e.key === 'Enter' && handleInput();
+  voiceBtn.onclick = () => speak(memory.lastReply || "Nothing to say yet.");
   displayMessage('spark', "Spark 3.0 ready. Memory online.");
 };
