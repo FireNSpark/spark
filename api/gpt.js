@@ -119,8 +119,15 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await completion.json();
-    console.log("🧠 RAW GPT RESPONSE:", data);
+    let data;
+    try {
+      data = await completion.json();
+      console.log("🧠 RAW GPT RESPONSE:", data);
+    } catch (e) {
+      const raw = await completion.text();
+      console.error("❌ GPT response not JSON:", raw);
+      return res.status(500).json({ error: "Non-JSON GPT response", raw });
+    }
 
     if (!completion.ok) {
       return res.status(500).json({ error: "GPT error", details: data });
