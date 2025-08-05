@@ -116,7 +116,10 @@
 
           const data = await res.json();
           console.log("🧠 GPT raw response:", data);
-          const reply = data.reply ?? JSON.stringify(data, null, 2);
+
+          const reply = data.reply || '[No reply]';
+          console.log("💬 GPT reply:", reply);
+
           chatBox.lastChild.remove();
           appendMessage('spark', reply);
           sparkVoice.speak(reply);
