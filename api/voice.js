@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   const { text } = req.body;
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const voiceId = "ijdvK10rhhVda9QPsfHN"; // your custom recorded voice
+  const voiceId = "EXAVITQu4vr4xnSDxMaL"; // fallback public voice ID for debug
 
   console.log("🔑 ELEVENLABS_API_KEY present:", !!apiKey);
   console.log("📝 Incoming text:", text);
