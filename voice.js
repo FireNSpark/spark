@@ -3,8 +3,17 @@
 // Enhanced voice system with fallback to browser speechSynthesis and ElevenLabs toggle
 
 let sparkVoice = {
+  lastText: '',
+
   speak: async function(text) {
     console.log("🗣️ Speaking:", text);
+
+    // Prevent repeating the same response
+    if (text === this.lastText) {
+      console.warn("🔁 Repeated response detected, skipping speak()");
+      return;
+    }
+    this.lastText = text;
 
     try {
       const res = await fetch('/api/voice', {
@@ -42,3 +51,5 @@ let sparkVoice = {
     }
   }
 };
+
+window.sparkVoice = sparkVoice;
