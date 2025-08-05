@@ -34,14 +34,10 @@ export default async function handler(req, res) {
       });
     }
 
-    const testPayload = {
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "user", content: "Hello, what's your name?" }
-      ]
-    };
-
-    console.log("📤 SENDING TO GPT:", JSON.stringify(testPayload));
+    const messages = [
+      { role: "system", content: "You are Spark, a personal assistant that speaks clearly and helps Josh by name. Keep it brief, human, and non-repetitive." },
+      { role: "user", content: message }
+    ];
 
     const completion = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -49,15 +45,10 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + OPENAI_API_KEY
       },
-      body: JSON.stringify(testPayload)
+      body: JSON.stringify({ model: "gpt-4", messages })
     });
 
-    console.log("📡 GPT Response Status:", completion.status);
-    console.log("📬 GPT Headers:", [...completion.headers.entries()]);
-
     const raw = await completion.text();
-    console.log("📥 RAW COMPLETION TEXT:", raw);
-
     let data;
     try {
       data = JSON.parse(raw);
@@ -70,8 +61,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "GPT error", details: data });
     }
 
-    const reply = (data.choices?.[0]?.message?.content) || '[No reply]';
-
+    const reply = data.choices?.[0]?.message?.content || '[No reply]';
     return res.status(200).json({ reply });
   } catch (err) {
     console.error("🔥 GPT Memory Fatal Error:", err);
