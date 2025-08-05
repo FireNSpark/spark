@@ -20,14 +20,15 @@ export default async function handler(req, res) {
       headers: {
         "xi-api-key": apiKey,
         "Content-Type": "application/json",
+        "Accept": "audio/mpeg"
       },
       body: JSON.stringify({
         text,
         model_id: "eleven_multilingual_v2",
         voice_settings: {
-          stability: 0.4,
-          similarity_boost: 0.7,
-          style: 0.5,
+          stability: 0.45,
+          similarity_boost: 0.8,
+          style: 0.6,
           use_speaker_boost: true
         }
       }),
