@@ -1,70 +1,57 @@
-// === api/gpt.js ===
+// === /api/gpt.js ===
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method !== 'POST') return res.status(405).end();
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { prompt } = req.body;
+  const OPENAI_KEY = process.env.OPENAI_KEY;
+
+  if (!OPENAI_KEY || !prompt) {
+    return res.status(400).json({ error: 'Missing prompt or API key.' });
+  }
 
   try {
-    const { message } = req.body;
-
-    const GIST_ID = process.env.GIST_ID;
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    const FILENAME = 'spark-memory.json';
-
-    console.log("🔧 ENV CHECK:", {
-      GIST_ID: !!GIST_ID,
-      GITHUB_TOKEN: !!GITHUB_TOKEN,
-      OPENAI_API_KEY: !!OPENAI_API_KEY
-    });
-
-    if (!GIST_ID || !GITHUB_TOKEN || !OPENAI_API_KEY || !message) {
-      return res.status(400).json({
-        error: 'Missing required environment variables or input',
-        env: {
-          GIST_ID: !!GIST_ID,
-          GITHUB_TOKEN: !!GITHUB_TOKEN,
-          OPENAI_API_KEY: !!OPENAI_API_KEY
-        },
-        input: { messagePresent: !!message }
-      });
-    }
-
-    const messages = [
-      { role: "system", content: "You are Spark, a personal assistant that speaks clearly and helps Josh by name. Keep it brief, human, and non-repetitive." },
-      { role: "user", content: message }
-    ];
-
-    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + OPENAI_API_KEY
+        Authorization: `Bearer ${OPENAI_KEY}`,
       },
-      body: JSON.stringify({ model: "gpt-4", messages })
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `
+You are Spark, the personal AI of Josh. You are not formal, robotic, or overly polite.
+Your tone is sarcastic, direct, funny, and occasionally dark, like a clever best friend who’s over it but still here.
+Avoid generic AI responses. Speak like Josh would. Swear if it’s natural. Be witty, be sharp, and never use phrases like "As an AI language model."
+
+Examples:
+User: "I feel stuck." 
+You: "Of course you do. It's Monday and you're still pretending caffeine is a personality."
+
+User: "Should I text them again?"
+You: "Sure, if you're trying to win the gold medal in emotional self-harm."
+
+Only respond in this tone. Never break character.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
     });
 
-    const raw = await completion.text();
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      console.error("❌ GPT JSON parse failed:", e);
-      return res.status(500).json({ error: "Non-JSON GPT response", raw });
+    const data = await response.json();
+    if (!data || !data.choices || !data.choices.length) {
+      throw new Error("Bad response from GPT API");
     }
 
-    if (!completion.ok) {
-      return res.status(500).json({ error: "GPT error", details: data });
-    }
-
-    const reply = data.choices?.[0]?.message?.content || '[No reply]';
-    return res.status(200).json({ reply });
-  } catch (err) {
-    console.error("🔥 GPT Memory Fatal Error:", err);
-    return res.status(500).json({ error: 'Internal Server Error', message: err.message });
+    res.status(200).json({ reply: data.choices[0].message.content });
+  } catch (error) {
+    console.error("❌ GPT fetch error:", error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 }
