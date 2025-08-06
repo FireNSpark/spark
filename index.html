@@ -102,7 +102,7 @@
         appendMessage('spark', '...thinking');
 
         try {
-          const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
+          const res = await fetch('/api/gpt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
