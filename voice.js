@@ -1,6 +1,6 @@
 // === voice.js ===
 
-// Enhanced voice system with fallback to browser speechSynthesis and ElevenLabs toggle
+// Enhanced voice system with robust ElevenLabs support and fallback
 
 let sparkVoice = {
   lastText: '',
@@ -8,7 +8,7 @@ let sparkVoice = {
   speak: async function(text) {
     console.log("🗣️ Speaking:", text);
 
-    // Prevent repeating the same response
+    // Avoid repeating the same line
     if (text === this.lastText) {
       console.warn("🔁 Repeated response detected, skipping speak()");
       return;
@@ -22,11 +22,16 @@ let sparkVoice = {
         body: JSON.stringify({ text })
       });
 
-      if (!res.ok) throw new Error("Voice API failed");
+      console.log("🔊 Voice API response status:", res.status);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("❌ Voice API error response:", errText);
+        throw new Error("Voice API failed");
+      }
 
       const blob = await res.blob();
       const audio = new Audio(URL.createObjectURL(blob));
-      audio.play();
+      await audio.play();
 
       const avatar = document.getElementById("avatarImage");
       if (avatar && avatar.classList) {
@@ -35,12 +40,12 @@ let sparkVoice = {
       }
 
     } catch (error) {
-      console.warn("🛑 Voice API failed, using speechSynthesis fallback", error);
+      console.warn("🛑 Voice API failed, falling back to speechSynthesis", error);
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.pitch = 1;
-      utterance.rate = 1;
+      utterance.pitch = 1.05;
+      utterance.rate = 0.97;
       speechSynthesis.speak(utterance);
 
       const avatar = document.getElementById("avatarImage");
