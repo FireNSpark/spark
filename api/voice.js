@@ -3,19 +3,20 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { text } = req.body;
+  const { text, voiceId } = req.body; // Accept voiceId from request
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  const voiceId = "EXAVITQu4vr4xnSDxMaL"; // fallback public voice ID for debug
+  const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL"; // Use fallback if not provided
 
   console.log("🔑 ELEVENLABS_API_KEY present:", !!apiKey);
   console.log("📝 Incoming text:", text);
+  console.log("🎤 Using voice ID:", selectedVoice);
 
   if (!apiKey || !text) {
     return res.status(400).json({ error: 'Missing API key or input text.' });
   }
 
   try {
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}`, {
       method: "POST",
       headers: {
         "xi-api-key": apiKey,
