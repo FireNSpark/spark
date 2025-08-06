@@ -19,7 +19,7 @@ let sparkVoice = {
       const res = await fetch('/api/voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, voiceId: "ijdvK10rhhVda9QPsfHN" })
       });
 
       console.log("🔊 Voice API response status:", res.status);
