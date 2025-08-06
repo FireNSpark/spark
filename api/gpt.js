@@ -13,11 +13,12 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { message, memory = "" } = req.body;
+  const message = req.body?.message || "";
+  const memory = req.body?.memory || "";
   const apiKey = process.env.OPENAI_API_KEY;
   const githubToken = process.env.GITHUB_TOKEN;
 
-  if (!apiKey || !message) {
+  if (!apiKey || !message.trim()) {
     return res.status(400).json({ error: 'Missing API key or prompt.' });
   }
 
