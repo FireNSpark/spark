@@ -1,22 +1,27 @@
 // === /api/gpt.js ===
 
+import { Octokit } from "@octokit/core";
+
+const GIST_ID = "b78eab0b5a589053e122f73fb8676b36"; // Josh's Gist ID
+const MEMORY_FILENAME = "spark-memory.json";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
+  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { prompt } = req.body;
+  const { message, memory = "" } = req.body;
   const apiKey = process.env.OPENAI_API_KEY;
+  const githubToken = process.env.GITHUB_TOKEN;
 
-  if (!apiKey || !prompt) {
+  if (!apiKey || !message) {
     return res.status(400).json({ error: 'Missing API key or prompt.' });
   }
+
+  const prompt = `${memory}\nUser: ${message}`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -48,6 +53,20 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const reply = data.choices[0].message.content;
+
+    // Save reply to memory gist
+    if (githubToken) {
+      const octokit = new Octokit({ auth: githubToken });
+      await octokit.request('PATCH /gists/{gist_id}', {
+        gist_id: GIST_ID,
+        files: {
+          [MEMORY_FILENAME]: {
+            content: `${memory}\nUser: ${message}\nSpark: ${reply}`
+          }
+        }
+      });
+    }
+
     res.status(200).json({ reply });
   } catch (err) {
     console.error("💥 API GPT handler crash:", err);
