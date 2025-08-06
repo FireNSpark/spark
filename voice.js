@@ -15,11 +15,14 @@ let sparkVoice = {
     }
     this.lastText = text;
 
+    // Remove user's name for a less repetitive tone
+    const cleanedText = text.replace(/\bJosh\b[:,]?/gi, '').trim();
+
     try {
       const res = await fetch('/api/voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voiceId: "ijdvK10rhhVda9QPsfHN" })
+        body: JSON.stringify({ text: cleanedText, voiceId: "ijdvK10rhhVda9QPsfHN" })
       });
 
       console.log("🔊 Voice API response status:", res.status);
@@ -42,7 +45,7 @@ let sparkVoice = {
     } catch (error) {
       console.warn("🛑 Voice API failed, falling back to speechSynthesis", error);
 
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(cleanedText);
       utterance.lang = 'en-US';
       utterance.pitch = 1.05;
       utterance.rate = 0.97;
