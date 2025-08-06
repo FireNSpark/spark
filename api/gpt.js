@@ -11,15 +11,24 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).end();
+  if (req.method !== "POST") return res.status(405).end();
 
-  const message = req.body?.message || "";
-  const memory = req.body?.memory || "";
+  let message = "";
+  let memory = "";
+  try {
+    const body = req.body || {};
+    message = body.message || "";
+    memory = body.memory || "";
+  } catch (parseError) {
+    console.error("📛 Failed to parse body:", parseError);
+    return res.status(400).json({ error: "Invalid JSON input" });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   const githubToken = process.env.GITHUB_TOKEN;
 
   if (!apiKey || !message.trim()) {
-    return res.status(400).json({ error: 'Missing API key or prompt.' });
+    return res.status(400).json({ error: "Missing API key or prompt." });
   }
 
   const prompt = `${memory}\nUser: ${message}`;
@@ -48,11 +57,17 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ OpenAI API Error:", errorText);
+      console.error("❌ OpenAI API Error:", response.status, errorText);
       return res.status(500).json({ error: "GPT fetch failed", details: errorText });
     }
 
     const data = await response.json();
+
+    if (!data.choices || !data.choices.length) {
+      console.error("📛 No choices returned from OpenAI:", data);
+      return res.status(500).json({ error: "No response from OpenAI" });
+    }
+
     const reply = data.choices[0].message.content;
 
     // Save reply to memory gist
