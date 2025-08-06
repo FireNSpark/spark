@@ -105,7 +105,7 @@
           const res = await fetch('https://spark-liard.vercel.app/api/gpt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ prompt: message })
           });
 
           if (!res.ok) {
