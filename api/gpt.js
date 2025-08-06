@@ -2,7 +2,7 @@
 
 import { Octokit } from "@octokit/core";
 
-const GIST_ID = "b78eab0b5a589053e122f73fb8676b36"; // Josh's Gist ID
+const GIST_ID = process.env.GIST_ID; // moved to env for security
 const MEMORY_FILENAME = "spark-memory.json";
 
 export default async function handler(req, res) {
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     const reply = data.choices[0].message.content;
 
     // Save reply to memory gist
-    if (githubToken) {
+    if (githubToken && GIST_ID) {
       const octokit = new Octokit({ auth: githubToken });
       await octokit.request('PATCH /gists/{gist_id}', {
         gist_id: GIST_ID,
