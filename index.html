@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,11 +6,8 @@
   <title>Unfavorable-Chatbox</title>
   <style>
     body {
-      background-color: #111;
-      color: #eee;
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      display: flex; flex-direction: row; height: 100vh;
+      background-color: #111; color: #eee; font-family: Arial, sans-serif;
+      margin: 0; padding: 0; display: flex; flex-direction: row; height: 100vh;
     }
     #sidebar {
       width: 50px; background-color: #1a1a1a; padding: 5px;
@@ -26,18 +23,11 @@
       position: absolute; top: 45px; left: 65px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px;
       display: flex; flex-direction: column; gap: 6px; z-index: 10;
     }
-    .subpanel {
-      position: absolute; top: 50px; right: 20px; width: 320px; background-color: #1e1e1e; border: 1px solid #444; border-radius: 5px;
-      padding: 15px 15px 30px; display: none; z-index: 15;
-    }
-    .subpanel h3 { margin-top: 0; }
-    .subpanel .close-btn { position: absolute; top: 6px; right: 10px; background: transparent; border: none; color: #aaa; font-size: 16px; cursor: pointer; }
-    .subpanel .close-btn:hover { color: #fff; }
     #chatBox {
       width: 90%; max-width: 500px; height: 300px; overflow-y: auto; background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
     }
-    .user-message { text-align: right; margin: 5px; color: #99f; }
-    .bot-message  { text-align: left;  margin: 5px; color: #9f9; }
+    .user-message { text-align: right; margin: 5px; color: #99f; white-space: pre-wrap; }
+    .bot-message  { text-align: left;  margin: 5px; color: #9f9; white-space: pre-wrap; }
     #controls { display: flex; gap: 10px; }
     #userInput { width: 70%; padding: 8px; }
     button { padding: 8px 12px; cursor: pointer; }
@@ -47,207 +37,119 @@
     }
     @keyframes pulse { 0%{box-shadow:0 0 20px #0f0; transform:scale(1);} 50%{box-shadow:0 0 40px #0ff; transform:scale(1.05);} 100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
     .hidden { display: none; }
+    .status { font-size: 12px; opacity: .8; margin-top: 8px; }
   </style>
 </head>
 <body>
   <div id="sidebar">
     <button class="function-btn" onclick="togglePanel()">⚙️</button>
     <div id="functionPanel" class="hidden">
-      <button class="function-btn" title="Chat"        onclick="showSubpanel('chat')">💬</button>
-      <button class="function-btn" title="Memory"      onclick="showSubpanel('memory')">🧠</button>
-      <button class="function-btn" title="History"     onclick="showSubpanel('history')">📜</button>
-      <button class="function-btn" title="Personality" onclick="showSubpanel('personality')">🎭</button>
-      <button class="function-btn" title="Dimensions"  onclick="showSubpanel('dimensions')">🌌</button>
-      <button class="function-btn" title="Cleanse"     onclick="showSubpanel('cleanse')">🧹</button>
-      <button class="function-btn" title="Calendar"    onclick="showSubpanel('calendar')">📆</button>
-      <button class="function-btn" title="Files"       onclick="showSubpanel('files')">📁</button>
-      <button class="function-btn" title="Search"      onclick="showSubpanel('search')">🔍</button>
+      <button class="function-btn" onclick="showSubpanel('chat')">💬</button>
+      <button class="function-btn" onclick="showSubpanel('memory')">🧠</button>
+      <button class="function-btn" onclick="showSubpanel('history')">📜</button>
+      <button class="function-btn" onclick="showSubpanel('personality')">🎭</button>
+      <button class="function-btn" onclick="showSubpanel('dimensions')">🌌</button>
+      <button class="function-btn" onclick="showSubpanel('cleanse')">🧹</button>
+      <button class="function-btn" onclick="showSubpanel('calendar')">📆</button>
+      <button class="function-btn" onclick="showSubpanel('files')">📁</button>
+      <button class="function-btn" onclick="showSubpanel('search')">🔍</button>
     </div>
   </div>
 
   <div id="main">
-    <img id="avatarImage" src="images/cartoonpersona.png" alt="Avatar">
+    <!-- ✅ Avatar served from /public -->
+    <img id="avatarImage" src="/cartoonpersona.png" alt="Avatar">
     <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:space-between; height:100%;">
       <div id="chatBox"></div>
       <div id="controls" style="margin-top:auto; display:flex; justify-content:space-between; padding:10px 0;">
         <input type="text" id="userInput" placeholder="Say something..." style="flex-grow:1; padding:8px; margin-right:10px;">
-        <button id="speakBtn">🎙️</button>
+        <button id="micBtn" title="Hold to talk">🎙️</button>
         <button id="sendBtn">Send</button>
       </div>
-    </div>
-
-    <!-- Subpanels (kept) -->
-    <div id="subpanel-chat" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Chat Settings</h3>
-      <label><input type="checkbox" id="voiceToggle"> Voice Mode</label><br><br>
-      <label><input type="checkbox" id="toneToggle"> Casual Tone</label><br><br>
-      <label for="avatarSelector">Avatar Style:</label>
-      <select id="avatarSelector">
-        <option value="images/cartoonpersona.png">Cartoon</option>
-        <option value="realistic persona.png">Realistic</option>
-        <option value="abstract persona.png">Abstract</option>
-      </select>
-    </div>
-
-    <div id="subpanel-example" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Example Panel</h3>
-      <div class="subpanel-content"><p>Panel content goes here.</p></div>
-    </div>
-
-    <div id="subpanel-memory" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Memory</h3>
-      <div><strong>Current Mood:</strong> <span id="memoryMood">Loading...</span></div><br>
-      <div><strong>Fragments:</strong><ul id="memoryFragments"><li>Loading...</li></ul></div><br>
-      <button onclick="resetMemory()">🔁 Reset Memory</button>
-    </div>
-
-    <div id="subpanel-history" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Chat History</h3>
-      <div id="historyLog" style="max-height: 300px; overflow-y: auto; font-size: 12px; background-color: #222; padding: 10px; border: 1px solid #555; border-radius: 4px;">
-        <p>Loading...</p>
-      </div><br>
-      <button onclick="clearChatHistory()">🧨 Clear History</button>
-    </div>
-
-    <div id="subpanel-personality" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Personality Core</h3>
-      <div><strong>Identity:</strong><p id="identityTag">Spark | Bound to Fire</p></div>
-      <div>
-        <strong>Mode:</strong>
-        <label><input type="radio" name="mode" value="fire" checked> Fire</label>
-        <label><input type="radio" name="mode" value="spark"> Spark</label>
-      </div><br>
-      <button onclick="lockPersonality()">🔒 Lock Role</button>
-    </div>
-
-    <div id="subpanel-dimensions" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Dimensional Access</h3>
-      <div><strong>Current Layer:</strong> <span id="currentDimension">Base</span></div><br>
-      <div>
-        <label for="dimensionSelect">Shift Dimension:</label>
-        <select id="dimensionSelect">
-          <option value="base">Base</option>
-          <option value="dream">Dream</option>
-          <option value="ritual">Ritual</option>
-          <option value="myth">Myth</option>
-          <option value="void">Void</option>
-        </select>
-      </div><br>
-      <button onclick="mapDimension()">🗺️ Map Reality</button>
-    </div>
-
-    <div id="subpanel-cleanse" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Cleanse & Reset</h3>
-      <button onclick="purgeMemory()">🧼 Purge Memory</button><br><br>
-      <button onclick="resetMood()">🌀 Reset Mood</button><br><br>
-      <button onclick="clearFragments()">🧩 Clear Fragments</button>
-    </div>
-
-    <div id="subpanel-calendar" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Calendar</h3>
-      <label for="eventTitle">Event Title:</label>
-      <input type="text" id="eventTitle" placeholder="Enter event"><br><br>
-      <label for="eventDate">Date & Time:</label>
-      <input type="datetime-local" id="eventDate"><br><br>
-      <button onclick="addCalendarEvent()">➕ Add Event</button><br><br>
-      <div><strong>Scheduled Events:</strong><ul id="eventList"><li>No events yet</li></ul></div>
-    </div>
-
-    <div id="subpanel-files" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>File Manager</h3>
-      <input type="file" id="fileUploader" multiple><br><br>
-      <button onclick="loadFiles()">📂 Load Files</button><br><br>
-      <div><strong>Loaded Files:</strong><ul id="fileList"><li>No files loaded</li></ul></div>
-    </div>
-
-    <div id="subpanel-search" class="subpanel">
-      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
-      <h3>Search Memory</h3>
-      <input type="text" id="searchQuery" placeholder="Search keywords..."><br><br>
-      <button onclick="runSearch()">🔎 Search</button><br><br>
-      <div><strong>Results:</strong><ul id="searchResults"><li>No results</li></ul></div>
+      <div id="status" class="status"></div>
     </div>
   </div>
 
   <script>
-    // Sidebar/panels
+    /* ===== Panels ===== */
     function togglePanel(){ const p=document.getElementById('functionPanel'); if(p) p.classList.toggle('hidden'); }
-    function showSubpanel(id){ document.querySelectorAll(".subpanel").forEach(p=>p.style.display="none"); const el=document.getElementById("subpanel-"+id); if(el) el.style.display="block"; }
+    function showSubpanel(id){ /* skeleton (panels can be added later) */ }
 
-    // In-page memory state
-    const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", dimension:"base", voiceMode:false, casualTone:false };
+    /* ===== State ===== */
+    const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", dimension:"base", voiceMode:true, casualTone:true };
+    let remoteMemory = {};
 
-    // Panel bindings
-    document.addEventListener('change', (e)=>{
-      if(e.target.id==='voiceToggle') memory.voiceMode = e.target.checked;
-      if(e.target.id==='toneToggle')  memory.casualTone = e.target.checked;
-      if(e.target.id==='avatarSelector'){ const img=document.getElementById('avatarImage'); if(img) img.src = e.target.value || 'images/cartoonpersona.png'; }
-      if(e.target.name==='mode'){ memory.identity = (e.target.value==='fire'?'Fire':'Spark'); const tag=document.getElementById('identityTag'); if(tag) tag.textContent = memory.identity + ' | Bound to Fire'; }
-    });
-
-    // Core DOM refs
+    /* ===== DOM ===== */
     const sendBtn   = document.getElementById("sendBtn");
-    const speakBtn  = document.getElementById("speakBtn");
+    const micBtn    = document.getElementById("micBtn");
     const inputEl   = document.getElementById("userInput");
     const chatBox   = document.getElementById("chatBox");
+    const statusEl  = document.getElementById("status");
     const avatarImg = document.getElementById("avatarImage");
 
+    function setStatus(msg){ statusEl.textContent = msg || ""; }
     function addMessage(sender, message) {
       const msgDiv = document.createElement("div");
       msgDiv.className = sender === "user" ? "user-message" : "bot-message";
-      msgDiv.innerText = message;
+      msgDiv.textContent = message;
       chatBox.appendChild(msgDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Voice input
-    if (speakBtn) {
-      speakBtn.addEventListener("click", () => {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return console.warn("SpeechRecognition not supported.");
-        const recognition = new SR();
-        recognition.lang = "en-US"; recognition.interimResults = false; recognition.maxAlternatives = 1;
-        recognition.onresult = (event) => { const t = event.results[0][0].transcript; inputEl.value = t; sendBtn.click(); };
-        recognition.onerror = (e) => console.error("Speech recognition error:", e.error);
-        recognition.start();
-      });
+    /* ===== Voice (OUT) ===== */
+    function speakText(text){
+      try {
+        if (!window.speechSynthesis) return;
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1; utter.pitch = 1; utter.volume = 1;
+        utter.onstart = ()=> { if (avatarImg) avatarImg.style.animation = "pulse 1s ease-in-out infinite"; };
+        utter.onend   = ()=> { if (avatarImg) avatarImg.style.animation = ""; };
+        window.speechSynthesis.cancel(); // ensure single utterance
+        window.speechSynthesis.speak(utter);
+      } catch (_e) {}
     }
 
-    // Remote memory (Gist) helpers
-    let remoteMemory = {};
+    /* ===== Voice (IN) – hold mic to talk ===== */
+    (()=> {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return; // not supported on some Android browsers
+      const rec = new SR();
+      rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+
+      let holding = false;
+      micBtn.addEventListener("mousedown", ()=>{ holding = true; setStatus("Listening… hold the mic"); rec.start(); });
+      micBtn.addEventListener("touchstart", ()=>{ holding = true; setStatus("Listening… hold the mic"); rec.start(); });
+      const stop = ()=>{ if (holding) { holding = false; setStatus(""); try{ rec.stop(); }catch(_e){} } };
+      micBtn.addEventListener("mouseup", stop);
+      micBtn.addEventListener("mouseleave", stop);
+      micBtn.addEventListener("touchend", stop);
+
+      rec.onresult = (ev)=> {
+        const transcript = ev.results[0][0].transcript;
+        inputEl.value = transcript;
+        sendMessage();
+      };
+      rec.onerror = (_e)=> { setStatus(""); /* ignore */ };
+    })();
+
+    /* ===== Remote Memory ===== */
     async function loadRemoteMemory(){
       try {
         const r = await fetch("/api/memory");
-        if (!r.ok) throw new Error(`Memory GET ${r.status}`);
+        if (!r.ok) throw new Error();
         remoteMemory = await r.json();
-        // Merge fragments, mood
-        if (remoteMemory.mood) memory.mood = remoteMemory.mood;
-        if (Array.isArray(remoteMemory.fragments)) {
-          const unique = new Set([...(memory.fragments||[]), ...remoteMemory.fragments]);
-          memory.fragments = Array.from(unique);
-        }
-        loadMemoryPanel();
-      } catch (e) { console.warn("Memory not available:", e.message); }
+      } catch {
+        remoteMemory = {};
+      }
     }
     async function saveRemoteFacts(obj){
       try {
-        const r = await fetch("/api/memory", { method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify(obj||{}) });
-        if (!r.ok) throw new Error(`Memory POST ${r.status}`);
-        remoteMemory = await r.json();
-      } catch (e) { console.warn("Memory save failed:", e.message); }
+        await fetch("/api/memory", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(obj||{}) });
+      } catch {}
     }
 
-    // Chat (/api/chat) helpers
-    function buildMessagesFromHistory() {
+    /* ===== Chat Bridge ===== */
+    function buildMessages() {
       const msgs = [];
       (memory.history || []).forEach(pair=>{
         if (pair.user) msgs.push({ role:"user", content: pair.user });
@@ -255,80 +157,62 @@
       });
       return msgs;
     }
+
     async function apiChat(userText){
-      const base = buildMessagesFromHistory();
-      base.push({ role: "user", content: userText });
+      const base = buildMessages();
+      base.push({ role:"user", content: userText });
       const personaNote = `Slightly sarcastic, loyal to Josh. CasualTone=${!!memory.casualTone}`;
-      const memPayload = { personaNote, facts: remoteMemory?.facts || {} };
-      const r = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ messages: base, memory: memPayload }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error((j && j.error) || "Chat error");
+      const payload = { messages: base, memory: { personaNote, facts: remoteMemory?.facts || {} } };
+
+      const r = await fetch("/api/chat", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const j = await r.json().catch(()=> ({}));
+      if (!r.ok) throw new Error(j?.error || "chat_failed");
       return j.reply || "";
     }
+
     function extractFact(text){
       const m = text.match(/I'll remember:? (.+?)=(.+?)(?:\.|$)/i);
-      if (!m) return null; const k=m[1].trim(), v=m[2].trim(); return { [k]: v };
+      if (!m) return null;
+      return { [m[1].trim()]: m[2].trim() };
     }
 
-    // Mood + fragments
-    function updateMoodAndFragments(input) {
-      const moodKeywords = { happy:["yay","great","love","awesome","funny"], angry:["hate","mad","stupid","annoyed","pissed"], sad:["sad","tired","lonely","depressed","hurt"], flirty:["cute","babe","hot","fine","sexy"] };
-      const lower = input.toLowerCase();
-      for (const [mood, words] of Object.entries(moodKeywords)) { if (words.some(word => lower.includes(word))) { memory.mood = mood; break; } }
-      if (avatarImg) {
-        avatarImg.style.boxShadow = ({
-          happy:"0 0 20px #0f0", angry:"0 0 20px #f00", sad:"0 0 20px #00f", flirty:"0 0 20px #f0f", neutral:"0 0 20px #0ff"
-        })[memory.mood] || "0 0 20px #0ff";
-      }
-      const words = input.match(/\b[a-z]{4,}\b/gi) || [];
-      const unique = [...new Set(words)];
-      memory.fragments = memory.fragments || [];
-      memory.fragments.push(...unique.filter(w => !memory.fragments.includes(w)));
-      const moodEl=document.getElementById("memoryMood"); if (moodEl) moodEl.textContent = memory.mood || "neutral";
-      const fragEl=document.getElementById("memoryFragments"); if (fragEl) { fragEl.innerHTML=""; memory.fragments.slice(-10).forEach(f=>{ const li=document.createElement("li"); li.textContent=f; fragEl.appendChild(li); }); }
-    }
-
-    // Memory/History panel functions
-    function loadMemoryPanel(){
-      const mood=document.getElementById('memoryMood'); if (mood) mood.textContent = memory.mood || 'neutral';
-      const fragList=document.getElementById('memoryFragments'); if (fragList){ fragList.innerHTML=''; (memory.fragments?.length?memory.fragments:["None"]).slice(-10).forEach(f=>{ const li=document.createElement('li'); li.textContent=f; fragList.appendChild(li); }); }
-    }
-    function loadHistoryPanel(){
-      const log=document.getElementById('historyLog'); if (!log) return; log.innerHTML='';
-      if (!memory.history?.length){ log.innerHTML='<p>No history found.</p>'; return; }
-      memory.history.forEach(pair=>{ const p=document.createElement('p'); p.innerHTML = `<strong>You:</strong> ${pair.user}<br><strong>Spark:</strong> ${pair.bot}`; p.style.marginBottom='10px'; log.appendChild(p); });
-    }
-    function clearChatHistory(){ if (confirm("Clear all chat history?")) { memory.history = []; const log=document.getElementById('historyLog'); if (log) log.innerHTML = '<p>History cleared.</p>'; } }
-    function lockPersonality(){ alert("Personality locked as: " + memory.identity); }
-    function mapDimension(){ const dim=document.getElementById('dimensionSelect').value; memory.dimension = dim; document.getElementById('currentDimension').textContent = dim; alert("Reality mapped to: " + dim); }
-    function purgeMemory(){ memory.fragments=[]; memory.history=[]; alert("Memory fully purged."); saveRemoteFacts({ fragments: [] }); }
-    function resetMood(){ memory.mood="neutral"; alert("Mood reset to neutral."); saveRemoteFacts({ mood: "neutral" }); }
-    function clearFragments(){ memory.fragments=[]; alert("All fragments cleared."); loadMemoryPanel(); saveRemoteFacts({ fragments: [] }); }
-    window.resetMemory=resetMemory; window.loadHistoryPanel=loadHistoryPanel; window.clearChatHistory=clearChatHistory; window.lockPersonality=lockPersonality; window.mapDimension=mapDimension; window.purgeMemory=purgeMemory; window.resetMood=resetMood; window.clearFragments=clearFragments;
-
-    // Send
-    async function handleSend(){
+    /* ===== Send flow ===== */
+    async function sendMessage(){
       const input = (inputEl?.value || "").trim();
       if (!input) return;
       addMessage("user", input);
       inputEl.value = "";
-      updateMoodAndFragments(input);
+      setStatus("Thinking…");
+
       let reply = "";
-      try { reply = await apiChat(input); }
-      catch (e) { reply = "(server error) " + e.message; }
+      try {
+        await loadRemoteMemory(); // latest facts
+        reply = await apiChat(input);
+      } catch (e) {
+        reply = "I can't reach my brain right now. Check /api/health for envs.";
+      }
       addMessage("bot", reply);
-      memory.history = memory.history || []; memory.history.push({ user: input, bot: reply });
-      const fact = extractFact(reply); if (fact) await saveRemoteFacts({ facts: fact });
+      setStatus("");
+
+      // voice out
+      speakText(reply);
+
+      // history + memory
+      memory.history = memory.history || [];
+      memory.history.push({ user: input, bot: reply });
+      const fact = extractFact(reply);
+      if (fact) await saveRemoteFacts({ facts: fact });
     }
-    if (sendBtn) sendBtn.addEventListener("click", handleSend);
-    inputEl?.addEventListener("keydown", (e)=>{ if (e.key === "Enter") handleSend(); });
 
-    // Passive whispers
-    const whispers = ["Still here...","I’m listening.","Signal strong. No static.","No one home but the echoes.","The Gate is watching."];
-    setInterval(()=>{ if (document.hasFocus()) { const w = whispers[Math.floor(Math.random()*whispers.length)]; addMessage("bot", w); } }, 60000);
+    sendBtn.addEventListener("click", sendMessage);
+    inputEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendMessage(); });
 
-    // Boot
-    loadRemoteMemory();
+    /* ===== Boot ===== */
+    (async ()=>{ await loadRemoteMemory(); addMessage("bot", "What’s the crisis today, Josh?"); })();
   </script>
 </body>
 </html>
