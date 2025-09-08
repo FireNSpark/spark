@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -131,4 +131,204 @@
       <div><strong>Current Layer:</strong> <span id="currentDimension">Base</span></div><br>
       <div>
         <label for="dimensionSelect">Shift Dimension:</label>
-        <select id
+        <select id="dimensionSelect">
+          <option value="base">Base</option>
+          <option value="dream">Dream</option>
+          <option value="ritual">Ritual</option>
+          <option value="myth">Myth</option>
+          <option value="void">Void</option>
+        </select>
+      </div><br>
+      <button onclick="mapDimension()">🗺️ Map Reality</button>
+    </div>
+
+    <div id="subpanel-cleanse" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Cleanse & Reset</h3>
+      <button onclick="purgeMemory()">🧼 Purge Memory</button><br><br>
+      <button onclick="resetMood()">🌀 Reset Mood</button><br><br>
+      <button onclick="clearFragments()">🧩 Clear Fragments</button>
+    </div>
+
+    <div id="subpanel-calendar" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Calendar</h3>
+      <label for="eventTitle">Event Title:</label>
+      <input type="text" id="eventTitle" placeholder="Enter event"><br><br>
+      <label for="eventDate">Date & Time:</label>
+      <input type="datetime-local" id="eventDate"><br><br>
+      <button onclick="addCalendarEvent()">➕ Add Event</button><br><br>
+      <div><strong>Scheduled Events:</strong><ul id="eventList"><li>No events yet</li></ul></div>
+    </div>
+
+    <div id="subpanel-files" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>File Manager</h3>
+      <input type="file" id="fileUploader" multiple><br><br>
+      <button onclick="loadFiles()">📂 Load Files</button><br><br>
+      <div><strong>Loaded Files:</strong><ul id="fileList"><li>No files loaded</li></ul></div>
+    </div>
+
+    <div id="subpanel-search" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Search Memory</h3>
+      <input type="text" id="searchQuery" placeholder="Search keywords..."><br><br>
+      <button onclick="runSearch()">🔎 Search</button><br><br>
+      <div><strong>Results:</strong><ul id="searchResults"><li>No results</li></ul></div>
+    </div>
+  </div>
+
+  <script>
+    // Sidebar/panels
+    function togglePanel(){ const p=document.getElementById('functionPanel'); if(p) p.classList.toggle('hidden'); }
+    function showSubpanel(id){ document.querySelectorAll(".subpanel").forEach(p=>p.style.display="none"); const el=document.getElementById("subpanel-"+id); if(el) el.style.display="block"; }
+
+    // In-page memory state
+    const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", dimension:"base", voiceMode:false, casualTone:false };
+
+    // Panel bindings
+    document.addEventListener('change', (e)=>{
+      if(e.target.id==='voiceToggle') memory.voiceMode = e.target.checked;
+      if(e.target.id==='toneToggle')  memory.casualTone = e.target.checked;
+      if(e.target.id==='avatarSelector'){ const img=document.getElementById('avatarImage'); if(img) img.src = e.target.value || 'images/cartoonpersona.png'; }
+      if(e.target.name==='mode'){ memory.identity = (e.target.value==='fire'?'Fire':'Spark'); const tag=document.getElementById('identityTag'); if(tag) tag.textContent = memory.identity + ' | Bound to Fire'; }
+    });
+
+    // Core DOM refs
+    const sendBtn   = document.getElementById("sendBtn");
+    const speakBtn  = document.getElementById("speakBtn");
+    const inputEl   = document.getElementById("userInput");
+    const chatBox   = document.getElementById("chatBox");
+    const avatarImg = document.getElementById("avatarImage");
+
+    function addMessage(sender, message) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = sender === "user" ? "user-message" : "bot-message";
+      msgDiv.innerText = message;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Voice input
+    if (speakBtn) {
+      speakBtn.addEventListener("click", () => {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return console.warn("SpeechRecognition not supported.");
+        const recognition = new SR();
+        recognition.lang = "en-US"; recognition.interimResults = false; recognition.maxAlternatives = 1;
+        recognition.onresult = (event) => { const t = event.results[0][0].transcript; inputEl.value = t; sendBtn.click(); };
+        recognition.onerror = (e) => console.error("Speech recognition error:", e.error);
+        recognition.start();
+      });
+    }
+
+    // Remote memory (Gist) helpers
+    let remoteMemory = {};
+    async function loadRemoteMemory(){
+      try {
+        const r = await fetch("/api/memory");
+        if (!r.ok) throw new Error(`Memory GET ${r.status}`);
+        remoteMemory = await r.json();
+        // Merge fragments, mood
+        if (remoteMemory.mood) memory.mood = remoteMemory.mood;
+        if (Array.isArray(remoteMemory.fragments)) {
+          const unique = new Set([...(memory.fragments||[]), ...remoteMemory.fragments]);
+          memory.fragments = Array.from(unique);
+        }
+        loadMemoryPanel();
+      } catch (e) { console.warn("Memory not available:", e.message); }
+    }
+    async function saveRemoteFacts(obj){
+      try {
+        const r = await fetch("/api/memory", { method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify(obj||{}) });
+        if (!r.ok) throw new Error(`Memory POST ${r.status}`);
+        remoteMemory = await r.json();
+      } catch (e) { console.warn("Memory save failed:", e.message); }
+    }
+
+    // Chat (/api/chat) helpers
+    function buildMessagesFromHistory() {
+      const msgs = [];
+      (memory.history || []).forEach(pair=>{
+        if (pair.user) msgs.push({ role:"user", content: pair.user });
+        if (pair.bot)  msgs.push({ role:"assistant", content: pair.bot });
+      });
+      return msgs;
+    }
+    async function apiChat(userText){
+      const base = buildMessagesFromHistory();
+      base.push({ role: "user", content: userText });
+      const personaNote = `Slightly sarcastic, loyal to Josh. CasualTone=${!!memory.casualTone}`;
+      const memPayload = { personaNote, facts: remoteMemory?.facts || {} };
+      const r = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ messages: base, memory: memPayload }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error((j && j.error) || "Chat error");
+      return j.reply || "";
+    }
+    function extractFact(text){
+      const m = text.match(/I'll remember:? (.+?)=(.+?)(?:\.|$)/i);
+      if (!m) return null; const k=m[1].trim(), v=m[2].trim(); return { [k]: v };
+    }
+
+    // Mood + fragments
+    function updateMoodAndFragments(input) {
+      const moodKeywords = { happy:["yay","great","love","awesome","funny"], angry:["hate","mad","stupid","annoyed","pissed"], sad:["sad","tired","lonely","depressed","hurt"], flirty:["cute","babe","hot","fine","sexy"] };
+      const lower = input.toLowerCase();
+      for (const [mood, words] of Object.entries(moodKeywords)) { if (words.some(word => lower.includes(word))) { memory.mood = mood; break; } }
+      if (avatarImg) {
+        avatarImg.style.boxShadow = ({
+          happy:"0 0 20px #0f0", angry:"0 0 20px #f00", sad:"0 0 20px #00f", flirty:"0 0 20px #f0f", neutral:"0 0 20px #0ff"
+        })[memory.mood] || "0 0 20px #0ff";
+      }
+      const words = input.match(/\b[a-z]{4,}\b/gi) || [];
+      const unique = [...new Set(words)];
+      memory.fragments = memory.fragments || [];
+      memory.fragments.push(...unique.filter(w => !memory.fragments.includes(w)));
+      const moodEl=document.getElementById("memoryMood"); if (moodEl) moodEl.textContent = memory.mood || "neutral";
+      const fragEl=document.getElementById("memoryFragments"); if (fragEl) { fragEl.innerHTML=""; memory.fragments.slice(-10).forEach(f=>{ const li=document.createElement("li"); li.textContent=f; fragEl.appendChild(li); }); }
+    }
+
+    // Memory/History panel functions
+    function loadMemoryPanel(){
+      const mood=document.getElementById('memoryMood'); if (mood) mood.textContent = memory.mood || 'neutral';
+      const fragList=document.getElementById('memoryFragments'); if (fragList){ fragList.innerHTML=''; (memory.fragments?.length?memory.fragments:["None"]).slice(-10).forEach(f=>{ const li=document.createElement('li'); li.textContent=f; fragList.appendChild(li); }); }
+    }
+    function loadHistoryPanel(){
+      const log=document.getElementById('historyLog'); if (!log) return; log.innerHTML='';
+      if (!memory.history?.length){ log.innerHTML='<p>No history found.</p>'; return; }
+      memory.history.forEach(pair=>{ const p=document.createElement('p'); p.innerHTML = `<strong>You:</strong> ${pair.user}<br><strong>Spark:</strong> ${pair.bot}`; p.style.marginBottom='10px'; log.appendChild(p); });
+    }
+    function clearChatHistory(){ if (confirm("Clear all chat history?")) { memory.history = []; const log=document.getElementById('historyLog'); if (log) log.innerHTML = '<p>History cleared.</p>'; } }
+    function lockPersonality(){ alert("Personality locked as: " + memory.identity); }
+    function mapDimension(){ const dim=document.getElementById('dimensionSelect').value; memory.dimension = dim; document.getElementById('currentDimension').textContent = dim; alert("Reality mapped to: " + dim); }
+    function purgeMemory(){ memory.fragments=[]; memory.history=[]; alert("Memory fully purged."); saveRemoteFacts({ fragments: [] }); }
+    function resetMood(){ memory.mood="neutral"; alert("Mood reset to neutral."); saveRemoteFacts({ mood: "neutral" }); }
+    function clearFragments(){ memory.fragments=[]; alert("All fragments cleared."); loadMemoryPanel(); saveRemoteFacts({ fragments: [] }); }
+    window.resetMemory=resetMemory; window.loadHistoryPanel=loadHistoryPanel; window.clearChatHistory=clearChatHistory; window.lockPersonality=lockPersonality; window.mapDimension=mapDimension; window.purgeMemory=purgeMemory; window.resetMood=resetMood; window.clearFragments=clearFragments;
+
+    // Send
+    async function handleSend(){
+      const input = (inputEl?.value || "").trim();
+      if (!input) return;
+      addMessage("user", input);
+      inputEl.value = "";
+      updateMoodAndFragments(input);
+      let reply = "";
+      try { reply = await apiChat(input); }
+      catch (e) { reply = "(server error) " + e.message; }
+      addMessage("bot", reply);
+      memory.history = memory.history || []; memory.history.push({ user: input, bot: reply });
+      const fact = extractFact(reply); if (fact) await saveRemoteFacts({ facts: fact });
+    }
+    if (sendBtn) sendBtn.addEventListener("click", handleSend);
+    inputEl?.addEventListener("keydown", (e)=>{ if (e.key === "Enter") handleSend(); });
+
+    // Passive whispers
+    const whispers = ["Still here...","I’m listening.","Signal strong. No static.","No one home but the echoes.","The Gate is watching."];
+    setInterval(()=>{ if (document.hasFocus()) { const w = whispers[Math.floor(Math.random()*whispers.length)]; addMessage("bot", w); } }, 60000);
+
+    // Boot
+    loadRemoteMemory();
+  </script>
+</body>
+</html>
