@@ -23,13 +23,15 @@
       position: absolute; top: 45px; left: 65px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px;
       display: flex; flex-direction: column; gap: 6px; z-index: 10;
     }
+    /* Chat box size: smaller per your request */
     #chatBox {
-      width: 90%; max-width: 500px; height: 300px; overflow-y: auto; background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
+      width: 85%; max-width: 420px; height: 240px; overflow-y: auto;
+      background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
     }
     .user-message { text-align: right; margin: 5px; color: #99f; white-space: pre-wrap; }
     .bot-message  { text-align: left;  margin: 5px; color: #9f9; white-space: pre-wrap; }
-    #controls { display: flex; gap: 10px; }
-    #userInput { width: 70%; padding: 8px; }
+    #controls { display: flex; gap: 10px; align-items: center; }
+    #userInput { width: auto; flex: 1; padding: 8px; }
     button { padding: 8px 12px; cursor: pointer; }
     #avatarImage {
       margin-top: 20px; width: 600px; height: 600px; background-color: #333; border-radius: 50%;
@@ -37,7 +39,7 @@
     }
     @keyframes pulse { 0%{box-shadow:0 0 20px #0f0; transform:scale(1);} 50%{box-shadow:0 0 40px #0ff; transform:scale(1.05);} 100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
     .hidden { display: none; }
-    .status { font-size: 12px; opacity: .8; margin-top: 8px; }
+    .status { font-size: 12px; opacity: .8; margin-top: 8px; min-height: 1em; }
   </style>
 </head>
 <body>
@@ -57,13 +59,13 @@
   </div>
 
   <div id="main">
-    <!-- ✅ Avatar served from /public -->
-    <img id="avatarImage" src="/cartoonpersona.png" alt="Avatar">
+    <!-- Avatar stays in your images/ folder -->
+    <img id="avatarImage" src="images/cartoonpersona.png" alt="Avatar">
     <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:space-between; height:100%;">
       <div id="chatBox"></div>
       <div id="controls" style="margin-top:auto; display:flex; justify-content:space-between; padding:10px 0;">
-        <input type="text" id="userInput" placeholder="Say something..." style="flex-grow:1; padding:8px; margin-right:10px;">
-        <button id="micBtn" title="Hold to talk">🎙️</button>
+        <input type="text" id="userInput" placeholder="Say something…">
+        <button id="micBtn" title="Tap to talk">🎙️</button>
         <button id="sendBtn">Send</button>
       </div>
       <div id="status" class="status"></div>
@@ -71,9 +73,9 @@
   </div>
 
   <script>
-    /* ===== Panels ===== */
+    /* ===== Panels (kept minimal) ===== */
     function togglePanel(){ const p=document.getElementById('functionPanel'); if(p) p.classList.toggle('hidden'); }
-    function showSubpanel(id){ /* skeleton (panels can be added later) */ }
+    function showSubpanel(_id){}
 
     /* ===== State ===== */
     const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", dimension:"base", voiceMode:true, casualTone:true };
@@ -100,52 +102,72 @@
     function speakText(text){
       try {
         if (!window.speechSynthesis) return;
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.rate = 1; utter.pitch = 1; utter.volume = 1;
-        utter.onstart = ()=> { if (avatarImg) avatarImg.style.animation = "pulse 1s ease-in-out infinite"; };
-        utter.onend   = ()=> { if (avatarImg) avatarImg.style.animation = ""; };
-        window.speechSynthesis.cancel(); // ensure single utterance
-        window.speechSynthesis.speak(utter);
-      } catch (_e) {}
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1; u.pitch = 1; u.volume = 1;
+        u.onstart = ()=> { if (avatarImg) avatarImg.style.animation = "pulse 1s ease-in-out infinite"; };
+        u.onend   = ()=> { if (avatarImg) avatarImg.style.animation = ""; };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      } catch {}
     }
 
-    /* ===== Voice (IN) – hold mic to talk ===== */
-    (()=> {
+    /* ===== Voice (IN) — tap to start/stop ===== */
+    (() => {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return; // not supported on some Android browsers
+      if (!micBtn) return;
+
+      if (!SR) {
+        micBtn.title = "Voice not supported on this browser";
+        return;
+      }
+
       const rec = new SR();
-      rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+      rec.lang = "en-US";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
 
-      let holding = false;
-      micBtn.addEventListener("mousedown", ()=>{ holding = true; setStatus("Listening… hold the mic"); rec.start(); });
-      micBtn.addEventListener("touchstart", ()=>{ holding = true; setStatus("Listening… hold the mic"); rec.start(); });
-      const stop = ()=>{ if (holding) { holding = false; setStatus(""); try{ rec.stop(); }catch(_e){} } };
-      micBtn.addEventListener("mouseup", stop);
-      micBtn.addEventListener("mouseleave", stop);
-      micBtn.addEventListener("touchend", stop);
+      let listening = false;
 
-      rec.onresult = (ev)=> {
+      function startRec() {
+        try {
+          rec.start();
+          listening = true;
+          micBtn.textContent = "🛑";
+          micBtn.title = "Tap to stop";
+          setStatus("Listening…");
+        } catch {}
+      }
+      function stopRec() {
+        try { rec.stop(); } catch {}
+        listening = false;
+        micBtn.textContent = "🎙️";
+        micBtn.title = "Tap to talk";
+        setStatus("");
+      }
+
+      micBtn.addEventListener("click", () => { listening ? stopRec() : startRec(); });
+
+      rec.onresult = (ev) => {
         const transcript = ev.results[0][0].transcript;
         inputEl.value = transcript;
         sendMessage();
       };
-      rec.onerror = (_e)=> { setStatus(""); /* ignore */ };
+      rec.onerror = (ev) => {
+        stopRec();
+        setStatus(ev.error === "not-allowed" ? "Mic blocked — allow microphone access in Site settings." : "Mic error: " + ev.error);
+      };
+      rec.onend = () => { if (listening) stopRec(); };
     })();
 
     /* ===== Remote Memory ===== */
     async function loadRemoteMemory(){
       try {
         const r = await fetch("/api/memory");
-        if (!r.ok) throw new Error();
-        remoteMemory = await r.json();
-      } catch {
-        remoteMemory = {};
-      }
+        if (r.ok) remoteMemory = await r.json(); else remoteMemory = {};
+      } catch { remoteMemory = {}; }
     }
     async function saveRemoteFacts(obj){
-      try {
-        await fetch("/api/memory", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(obj||{}) });
-      } catch {}
+      try { await fetch("/api/memory", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(obj||{}) }); } catch {}
     }
 
     /* ===== Chat Bridge ===== */
@@ -161,16 +183,15 @@
     async function apiChat(userText){
       const base = buildMessages();
       base.push({ role:"user", content: userText });
+
       const personaNote = `Slightly sarcastic, loyal to Josh. CasualTone=${!!memory.casualTone}`;
       const payload = { messages: base, memory: { personaNote, facts: remoteMemory?.facts || {} } };
 
       const r = await fetch("/api/chat", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
+        method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload)
       });
       const j = await r.json().catch(()=> ({}));
-      if (!r.ok) throw new Error(j?.error || "chat_failed");
+      if (!r.ok) throw new Error(j?.error || "brain_offline");
       return j.reply || "";
     }
 
@@ -190,20 +211,20 @@
 
       let reply = "";
       try {
-        await loadRemoteMemory(); // latest facts
+        await loadRemoteMemory();
         reply = await apiChat(input);
+        setStatus("");
       } catch (e) {
-        reply = "I can't reach my brain right now. Check /api/health for envs.";
+        setStatus("Brain offline — check /api/health (ENVs).");
+        reply = "My brain isn't responding. Peek /api/health to see what's missing.";
       }
-      addMessage("bot", reply);
-      setStatus("");
 
-      // voice out
+      addMessage("bot", reply);
       speakText(reply);
 
-      // history + memory
       memory.history = memory.history || [];
       memory.history.push({ user: input, bot: reply });
+
       const fact = extractFact(reply);
       if (fact) await saveRemoteFacts({ facts: fact });
     }
@@ -212,7 +233,15 @@
     inputEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendMessage(); });
 
     /* ===== Boot ===== */
-    (async ()=>{ await loadRemoteMemory(); addMessage("bot", "What’s the crisis today, Josh?"); })();
+    (async () => {
+      await loadRemoteMemory();
+      addMessage("bot", "What’s the crisis today, Josh?");
+      // Quick ping to show if backend is reachable (small + silent)
+      try {
+        const r = await fetch("/api/chat");
+        if (r.ok) setStatus("Chat endpoint: OK"); else setStatus("Chat endpoint error — check /api/health");
+      } catch { setStatus("Chat endpoint error — check /api/health"); }
+    })();
   </script>
 </body>
 </html>
