@@ -1,0 +1,77 @@
+// /api/memory.js
+const FILENAME = "spark_memory.json";
+
+export default async function handler(req, res) {
+  try {
+    const GIST_ID  = process.env.GIST_ID;
+    const GH_TOKEN = process.env.GITHUB_TOKEN;
+    if (!GIST_ID || !GH_TOKEN) {
+      return res.status(500).json({ error: "Missing GIST_ID or GITHUB_TOKEN" });
+    }
+
+    if (req.method === "GET") {
+      const data = await getMemory(GIST_ID, GH_TOKEN);
+      return res.status(200).json(data);
+    }
+
+    if (req.method === "POST") {
+      const incoming = await readJSON(req);
+      const updated = await mergeAndSave(GIST_ID, GH_TOKEN, incoming);
+      return res.status(200).json(updated);
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+  } catch (e) {
+    console.error("MEMORY_ERROR", e);
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
+async function getMemory(gistId, token) {
+  const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+    headers: { Authorization: `Bearer ${token}`, "User-Agent": "spark-app" }
+  });
+  if (!r.ok) throw new Error(`Gist fetch failed: ${r.status}`);
+  const j = await r.json();
+  const content = j.files?.[FILENAME]?.content || "{}";
+  return JSON.parse(content);
+}
+
+async function saveMemory(gistId, token, obj) {
+  const files = { [FILENAME]: { content: JSON.stringify(obj, null, 2) } };
+  const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ files })
+  });
+  if (!r.ok) throw new Error(`Gist save failed: ${r.status}`);
+  return obj;
+}
+
+async function mergeAndSave(gistId, token, input) {
+  const current = await getMemory(gistId, token).catch(() => ({}));
+  const next = normalize({
+    ...current,
+    ...input,
+    facts: { ...(current.facts || {}), ...(input.facts || {}) }
+  });
+  return await saveMemory(gistId, token, next);
+}
+
+function normalize(obj) {
+  if (!obj.facts) obj.facts = {};
+  if (!obj.personaNote) obj.personaNote = "Slightly sarcastic, loyal to Josh, concise.";
+  return obj;
+}
+
+function readJSON(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", c => (data += c));
+    req.on("end", () => {
+      try { resolve(JSON.parse(data || "{}")); }
+      catch (e) { reject(e); }
+    });
+    req.on("error", reject);
+  });
+}
