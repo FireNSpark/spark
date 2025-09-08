@@ -1,152 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta name="openai-key" content="__VERCEL_API_KEY__" />
-<meta charset="UTF-8">
+<head>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spark Assistant</title>
-  <link rel="icon" href="data:,">
+  <title>Unfavorable-Chatbox</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background: #111;
+      background-color: #111;
       color: #eee;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: row; height: 100vh;
     }
+    #sidebar {
+      width: 50px; background-color: #1a1a1a; padding: 5px;
+      display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: center; position: relative;
+    }
+    #main {
+      flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px;
+    }
+    button.function-btn { width: 100%; padding: 6px; background-color: #333; color: #eee; border: none; cursor: pointer; font-size: 14px; transition: background-color 0.2s; }
+    button.function-btn:hover { background-color: #555; }
+    #functionPanel.hidden { display: none; }
+    #functionPanel {
+      position: absolute; top: 45px; left: 65px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px;
+      display: flex; flex-direction: column; gap: 6px; z-index: 10;
+    }
+    .subpanel {
+      position: absolute; top: 50px; right: 20px; width: 320px; background-color: #1e1e1e; border: 1px solid #444; border-radius: 5px;
+      padding: 15px 15px 30px; display: none; z-index: 15;
+    }
+    .subpanel h3 { margin-top: 0; }
+    .subpanel .close-btn { position: absolute; top: 6px; right: 10px; background: transparent; border: none; color: #aaa; font-size: 16px; cursor: pointer; }
+    .subpanel .close-btn:hover { color: #fff; }
+    #chatBox {
+      width: 90%; max-width: 500px; height: 300px; overflow-y: auto; background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
+    }
+    .user-message { text-align: right; margin: 5px; color: #99f; }
+    .bot-message  { text-align: left;  margin: 5px; color: #9f9; }
+    #controls { display: flex; gap: 10px; }
+    #userInput { width: 70%; padding: 8px; }
+    button { padding: 8px 12px; cursor: pointer; }
     #avatarImage {
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      margin-top: 20px;
-      object-fit: cover;
-      box-shadow: 0 0 20px #0ff;
+      margin-top: 20px; width: 600px; height: 600px; background-color: #333; border-radius: 50%;
+      box-shadow: 0 0 15px #0ff; transition: box-shadow 0.2s ease, transform 0.2s ease; object-fit: cover; flex-shrink: 0;
     }
-    .pulse {
-      animation: pulse 1s ease-out;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
-      50% { transform: scale(1.05); box-shadow: 0 0 40px #0ff; }
-      100% { transform: scale(1); box-shadow: 0 0 20px #0ff; }
-    }
-    #chat {
-      width: 90%;
-      max-width: 500px;
-      height: 100px;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 8px;
-      overflow-y: auto;
-      padding: 10px;
-      margin-top: 1rem;
-    }
-    #input {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-      margin: 20px 0;
-      width: 90%;
-      max-width: 500px;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 10px;
-      font-size: 1rem;
-      background: #222;
-      color: #eee;
-      border: none;
-    }
-    button {
-      padding: 10px;
-      background: #333;
-      color: #eee;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
+    @keyframes pulse { 0%{box-shadow:0 0 20px #0f0; transform:scale(1);} 50%{box-shadow:0 0 40px #0ff; transform:scale(1.05);} 100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
+    .hidden { display: none; }
   </style>
-  <script src="voice.js"></script>
-  <script src="mic.js"></script>
 </head>
 <body>
-  <img id="avatarImage" src="cartoonpersona.png" alt="Avatar" />
-  <div id="chat"></div>
-  <div id="input">
-    <button onclick="startMic()">🎤</button>
-    <input type="text" id="userInput" placeholder="Say something...">
-    <button onclick="sendMessage()">Send</button>
+  <div id="sidebar">
+    <button class="function-btn" onclick="togglePanel()">⚙️</button>
+    <div id="functionPanel" class="hidden">
+      <button class="function-btn" title="Chat"        onclick="showSubpanel('chat')">💬</button>
+      <button class="function-btn" title="Memory"      onclick="showSubpanel('memory')">🧠</button>
+      <button class="function-btn" title="History"     onclick="showSubpanel('history')">📜</button>
+      <button class="function-btn" title="Personality" onclick="showSubpanel('personality')">🎭</button>
+      <button class="function-btn" title="Dimensions"  onclick="showSubpanel('dimensions')">🌌</button>
+      <button class="function-btn" title="Cleanse"     onclick="showSubpanel('cleanse')">🧹</button>
+      <button class="function-btn" title="Calendar"    onclick="showSubpanel('calendar')">📆</button>
+      <button class="function-btn" title="Files"       onclick="showSubpanel('files')">📁</button>
+      <button class="function-btn" title="Search"      onclick="showSubpanel('search')">🔍</button>
+    </div>
   </div>
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const chatBox = document.getElementById('chat');
-      const input = document.getElementById('userInput');
 
-      function appendMessage(sender, text) {
-        const msg = document.createElement('div');
-        msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-        chatBox.appendChild(msg);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+  <div id="main">
+    <img id="avatarImage" src="images/cartoonpersona.png" alt="Avatar">
+    <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:space-between; height:100%;">
+      <div id="chatBox"></div>
+      <div id="controls" style="margin-top:auto; display:flex; justify-content:space-between; padding:10px 0;">
+        <input type="text" id="userInput" placeholder="Say something..." style="flex-grow:1; padding:8px; margin-right:10px;">
+        <button id="speakBtn">🎙️</button>
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
 
-      async function sendMessage() {
-        const message = input.value.trim();
-        if (!message) return;
+    <!-- Subpanels (kept) -->
+    <div id="subpanel-chat" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Chat Settings</h3>
+      <label><input type="checkbox" id="voiceToggle"> Voice Mode</label><br><br>
+      <label><input type="checkbox" id="toneToggle"> Casual Tone</label><br><br>
+      <label for="avatarSelector">Avatar Style:</label>
+      <select id="avatarSelector">
+        <option value="images/cartoonpersona.png">Cartoon</option>
+        <option value="realistic persona.png">Realistic</option>
+        <option value="abstract persona.png">Abstract</option>
+      </select>
+    </div>
 
-        appendMessage('you', message);
-        input.value = '';
-        appendMessage('spark', '...thinking');
+    <div id="subpanel-example" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Example Panel</h3>
+      <div class="subpanel-content"><p>Panel content goes here.</p></div>
+    </div>
 
-        try {
-          const res = await fetch('/api/gpt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message,
-              memory: ''
-            })
-          });
+    <div id="subpanel-memory" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Memory</h3>
+      <div><strong>Current Mood:</strong> <span id="memoryMood">Loading...</span></div><br>
+      <div><strong>Fragments:</strong><ul id="memoryFragments"><li>Loading...</li></ul></div><br>
+      <button onclick="resetMemory()">🔁 Reset Memory</button>
+    </div>
 
-          if (!res.ok) {
-            const errorText = await res.text();
-            console.error("❌ GPT fetch error:", res.status, errorText);
-            throw new Error("Bad response from GPT API");
-          }
+    <div id="subpanel-history" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Chat History</h3>
+      <div id="historyLog" style="max-height: 300px; overflow-y: auto; font-size: 12px; background-color: #222; padding: 10px; border: 1px solid #555; border-radius: 4px;">
+        <p>Loading...</p>
+      </div><br>
+      <button onclick="clearChatHistory()">🧨 Clear History</button>
+    </div>
 
-          const data = await res.json();
-          console.log("🧠 GPT raw response:", data);
+    <div id="subpanel-personality" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Personality Core</h3>
+      <div><strong>Identity:</strong><p id="identityTag">Spark | Bound to Fire</p></div>
+      <div>
+        <strong>Mode:</strong>
+        <label><input type="radio" name="mode" value="fire" checked> Fire</label>
+        <label><input type="radio" name="mode" value="spark"> Spark</label>
+      </div><br>
+      <button onclick="lockPersonality()">🔒 Lock Role</button>
+    </div>
 
-          const reply = data.reply || '[No reply]';
-          console.log("💬 GPT reply:", reply);
-
-          chatBox.lastChild.remove();
-          appendMessage('spark', reply);
-          sparkVoice.speak(reply);
-
-          const avatar = document.getElementById('avatarImage');
-          if (avatar) {
-            avatar.classList.add('pulse');
-            setTimeout(() => avatar.classList.remove('pulse'), 1000);
-          }
-        } catch (err) {
-          chatBox.lastChild.remove();
-          appendMessage('spark', '⚠️ error talking to GPT');
-          console.error('❌ GPT fetch failed:', err);
-          appendMessage('spark', `⚠️ ${err.message || 'Unknown error occurred'}`);
-        }
-      }
-
-      function startMic() {
-        sparkMic.start();
-      }
-
-      window.sendMessage = sendMessage;
-      window.startMic = startMic;
-    });
-  </script>
-</body>
-</html>
+    <div id="subpanel-dimensions" class="subpanel">
+      <button class="close-btn" onclick="this.parentElement.style.display='none'">✖</button>
+      <h3>Dimensional Access</h3>
+      <div><strong>Current Layer:</strong> <span id="currentDimension">Base</span></div><br>
+      <div>
+        <label for="dimensionSelect">Shift Dimension:</label>
+        <select id
