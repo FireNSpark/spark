@@ -56,7 +56,7 @@ async function mergeAndSave(gistId, token, input) {
 
 function normalize(obj) {
   if (!obj.facts) obj.facts = {};
-  if (!obj.personaNote) obj.personaNote = "Slightly sarcastic, loyal to Josh, concise.";
+  if (!obj.personaNote) obj.personaNote = "Slightly sarcastic, loyal to Fire, concise.";
   return obj;
 }
 
