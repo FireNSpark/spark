@@ -1,8 +1,19 @@
 // /api/chat.js
 export default async function handler(req, res) {
   try {
+    const useAzure = String(process.env.USE_AZURE || "").trim() === "1";
+    const diag = {
+      mode: useAzure ? "azure" : "openai",
+      has_OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+      has_AZURE_OPENAI_ENDPOINT: !!process.env.AZURE_OPENAI_ENDPOINT,
+      has_AZURE_OPENAI_DEPLOYMENT: !!process.env.AZURE_OPENAI_DEPLOYMENT,
+      has_AZURE_OPENAI_API_VERSION: !!process.env.AZURE_OPENAI_API_VERSION,
+      // Redacted key prefix to help debug: "sk-***" or "az-***"
+      key_prefix: (process.env.OPENAI_API_KEY || "").startsWith("sk-") ? "sk" : ((process.env.OPENAI_API_KEY || "") ? "az" : "none")
+    };
+
     if (req.method === "GET") {
-      return res.status(200).json({ ok: true, expects: "POST {messages, memory}" });
+      return res.status(200).json({ ok: true, expects: "POST {messages, memory}", ...diag });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -15,8 +26,6 @@ export default async function handler(req, res) {
       memory?.facts ? `KnownFacts: ${JSON.stringify(memory.facts).slice(0, 4000)}` : "",
     ].filter(Boolean).join("\n");
 
-    const useAzure = String(process.env.USE_AZURE || "").trim() === "1";
-
     const reply = useAzure
       ? await chatAzure(system, messages)
       : await chatOpenAI(system, messages);
@@ -24,15 +33,18 @@ export default async function handler(req, res) {
     return res.status(200).json({ reply });
   } catch (e) {
     console.error("CHAT_ERROR", e);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: String(e.message || e) });
   }
 }
 
 /* ---------- OpenAI (standard, sk- keys) ---------- */
 async function chatOpenAI(system, messages) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY (OpenAI mode)");
   // Expect a key that looks like: sk-********
+  if (!apiKey.startsWith("sk-")) {
+    throw new Error("Your OPENAI_API_KEY does not start with 'sk-'. Either set USE_AZURE=1 or use a standard OpenAI key.");
+  }
   const body = {
     model: "gpt-4o-mini",
     temperature: 0.6,
@@ -56,10 +68,10 @@ async function chatAzure(system, messages) {
   const endpoint   = process.env.AZURE_OPENAI_ENDPOINT;      // https://<resource>.openai.azure.com
   const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;     // your model deployment name
   const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2024-06-01";
-  const apiKey     = process.env.OPENAI_API_KEY;              // Azure key
+  const apiKey     = process.env.OPENAI_API_KEY;              // Azure key (often not 'sk-')
 
   if (!endpoint || !deployment || !apiKey) {
-    throw new Error("Azure envs missing (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, OPENAI_API_KEY)");
+    throw new Error("Azure envs missing (need USE_AZURE=1, OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, AZURE_OPENAI_API_VERSION)");
   }
 
   const body = { messages: [{ role: "system", content: system }, ...messages], temperature: 0.6 };
