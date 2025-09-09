@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/api/chat", "dest": "/api/chat.js" },
+    { "src": "/api/memory", "dest": "/api/memory.js" },
+    { "src": "/api/health", "dest": "/api/health.js" }
+  ]
+}
