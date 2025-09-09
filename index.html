@@ -19,7 +19,7 @@
       background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
     }
     .user-message { text-align: right; margin: 5px; color: #99f; white-space: pre-wrap; }
-    .bot-message  { text-align: left;  margin: 5px; color: #9f9; white-space: pre-wrap; }
+    .bot-message  { text-align: left;  margin: 5px; color: #9f; white-space: pre-wrap; }
     #controls { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
     #userInput { flex: 1; padding: 8px; }
     button { padding: 8px 12px; cursor: pointer; }
@@ -34,6 +34,13 @@
       100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
 
     .status { font-size: 12px; opacity: .85; margin-top: 8px; min-height: 1em; }
+
+    /* (Optional) tiny styling for the codes list box */
+    #codes {
+      width: 85%; max-width: 420px; margin-top: 16px; background:#1b1b1b;
+      border:1px solid #333; padding:10px; font-size:14px;
+    }
+    #codes ul { margin: 0; padding-left: 18px; }
   </style>
 </head>
 <body>
@@ -53,6 +60,9 @@
         <button id="sendBtn">Send</button>
       </div>
       <div id="status" class="status"></div>
+
+      <!-- Codes list lives here -->
+      <div id="codes">Loading codes…</div>
     </div>
   </div>
 
@@ -158,5 +168,39 @@
       } catch { setStatus("Health check failed."); }
     })();
   </script>
+
+  <!-- ▼▼ DROP-IN CODES LIST: no backend required, auto-fallback ▼▼ -->
+  <script>
+    (async () => {
+      const target = document.getElementById('codes');
+      if (!target) return;
+
+      const render = (arr) => {
+        if (!Array.isArray(arr) || !arr.length) {
+          target.textContent = 'No codes found.';
+          return;
+        }
+        target.innerHTML = '<ul>' + arr.map(c =>
+          `<li><strong>${(c && c.name) ? c.name : ''}</strong> — ${(c && c.value) ? c.value : ''}</li>`
+        ).join('') + '</ul>';
+      };
+
+      try {
+        // Try backend first (if you ever run one on :3000)
+        const res = await fetch('http://localhost:3000/api/code/codes', {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        render(await res.json());
+      } catch (e) {
+        // Fallback so this page still works without a backend
+        render([
+          { name: 'ALPHA', value: '123' },
+          { name: 'BETA',  value: '456' }
+        ]);
+      }
+    })();
+  </script>
+  <!-- ▲▲ DROP-IN CODES LIST ▲▲ -->
 </body>
 </html>
