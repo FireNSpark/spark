@@ -13,18 +13,16 @@
       display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: center; position: relative; }
     #main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; }
 
-    /* Controls & chat */
     #chatBox {
       width: 85%; max-width: 420px; height: 240px; overflow-y: auto;
       background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
     }
     .user-message { text-align: right; margin: 5px; color: #99f; white-space: pre-wrap; }
-    .bot-message  { text-align: left;  margin: 5px; color: #9f; white-space: pre-wrap; }
+    .bot-message  { text-align: left;  margin: 5px; color: #9f9; white-space: pre-wrap; }
     #controls { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
     #userInput { flex: 1; padding: 8px; }
     button { padding: 8px 12px; cursor: pointer; }
 
-    /* Avatar */
     #avatarImage {
       margin-top: 20px; width: 600px; height: 600px; background-color: #333; border-radius: 50%;
       box-shadow: 0 0 15px #0ff; transition: box-shadow 0.2s ease, transform 0.2s ease; object-fit: cover; flex-shrink: 0;
@@ -35,7 +33,6 @@
 
     .status { font-size: 12px; opacity: .85; margin-top: 8px; min-height: 1em; }
 
-    /* (Optional) tiny styling for the codes list box */
     #codes {
       width: 85%; max-width: 420px; margin-top: 16px; background:#1b1b1b;
       border:1px solid #333; padding:10px; font-size:14px;
@@ -50,7 +47,6 @@
   </div>
 
   <div id="main">
-    <!-- Avatar at project root -->
     <img id="avatarImage" src="/cartoonpersona.png" alt="Avatar">
     <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:flex-start; align-items:center; width:100%; max-width:720px;">
       <div id="chatBox"></div>
@@ -60,21 +56,16 @@
         <button id="sendBtn">Send</button>
       </div>
       <div id="status" class="status"></div>
-
-      <!-- Codes list lives here -->
       <div id="codes">Loading codes…</div>
     </div>
   </div>
 
   <script>
-    // Panels (stub so your gear button works)
     function togglePanel(){ const p=document.getElementById('functionPanel'); if(!p) return; p.classList.toggle('hidden'); }
 
-    // State
     const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", casualTone:true };
     let remoteMemory = {};
 
-    // DOM refs
     const sendBtn = document.getElementById("sendBtn");
     const micBtn  = document.getElementById("micBtn");
     const inputEl = document.getElementById("userInput");
@@ -91,7 +82,6 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // Voice OUT
     function speakText(text){
       try {
         if (!window.speechSynthesis) return;
@@ -103,104 +93,47 @@
       } catch {}
     }
 
-    // Voice IN (tap to start/stop)
-    (() => {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!micBtn) return;
-      if (!SR) { micBtn.title = "Voice not supported on this browser"; return; }
-      const rec = new SR(); rec.lang="en-US"; rec.interimResults=false; rec.maxAlternatives=1;
-      let listening = false;
-      function start(){ try{ rec.start(); listening=true; micBtn.textContent="🛑"; micBtn.title="Tap to stop"; setStatus("Listening…"); }catch{} }
-      function stop(){ try{ rec.stop(); }catch{} listening=false; micBtn.textContent="🎙️"; micBtn.title="Tap to talk"; setStatus(""); }
-      micBtn.addEventListener("click", ()=>{ listening?stop():start(); });
-      rec.onresult = ev => { inputEl.value = ev.results[0][0].transcript; sendMessage(); };
-      rec.onerror  = ev => { stop(); setStatus(ev.error==="not-allowed"?"Mic blocked — allow mic in Site settings.":"Mic error: "+ev.error); };
-      rec.onend    = () => { if (listening) stop(); };
-    })();
-
-    // Memory helpers
-    async function loadRemoteMemory(){ try{ const r=await fetch("/api/memory"); remoteMemory = r.ok ? await r.json() : {}; }catch{ remoteMemory = {}; } }
-    async function saveRemoteFacts(obj){ try{ await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj||{})}); }catch{} }
-
-    // Chat helpers (OpenAI-only backend)
-    function buildMessages(){
-      const msgs=[]; (memory.history||[]).forEach(p=>{ if(p.user) msgs.push({role:"user",content:p.user}); if(p.bot) msgs.push({role:"assistant",content:p.bot}); });
-      return msgs;
-    }
+    // Minimal API Chat wired to /api/chat
     async function apiChat(userText){
-      const base = buildMessages(); base.push({ role:"user", content:userText });
-      const personaNote = `Slightly sarcastic, loyal to Fire. CasualTone=${!!memory.casualTone}`;
-      const payload = { messages: base, memory: { personaNote, facts: remoteMemory?.facts || {} } };
-      const r = await fetch("/api/chat",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
-      const j = await r.json().catch(()=> ({}));
-      if (!r.ok) throw new Error(j?.error || "brain_offline");
-      return j.reply || "";
+      const payload = {
+        system: "You are Spark. Keep it direct. No fluff.",
+        messages: [{ role: "user", content: userText }]
+      };
+      try {
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j?.error || "brain_offline");
+        return j.reply || "";
+      } catch (e) {
+        console.error(e);
+        return "Brain offline.";
+      }
     }
-    function extractFact(text){ const m=text.match(/I'll remember:? (.+?)=(.+?)(?:\.|$)/i); return m?{[m[1].trim()]:m[2].trim()}:null; }
 
     async function sendMessage(){
       const input = (inputEl?.value || "").trim(); if (!input) return;
       addMessage("user", input); inputEl.value = ""; setStatus("Thinking…");
-      let reply = "";
-      try {
-        await loadRemoteMemory();
-        reply = await apiChat(input);
-        setStatus("");
-      } catch (e) {
-        setStatus("Brain offline — check /api/health (ENVs).");
-        reply = "My brain isn’t responding. Peek /api/health for missing envs.";
-      }
+      let reply = await apiChat(input);
+      setStatus("");
       addMessage("bot", reply); speakText(reply);
       (memory.history ||= []).push({ user: input, bot: reply });
-      const fact = extractFact(reply); if (fact) await saveRemoteFacts({ facts: fact });
     }
 
     sendBtn.addEventListener("click", sendMessage);
     inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
 
-    // Boot
     (async ()=>{
       addMessage("bot","What’s the crisis today, Fire?");
       try {
         const h=await fetch("/api/health"); const hj=await h.json();
-        const miss=[]; if(!hj.has_OPENAI_API_KEY) miss.push("OPENAI_API_KEY"); if(!hj.has_GITHUB_TOKEN) miss.push("GITHUB_TOKEN"); if(!hj.has_GIST_ID) miss.push("GIST_ID");
+        const miss=[]; if(!hj.has_OPENAI_API_KEY) miss.push("OPENAI_API_KEY");
         setStatus(miss.length?`Missing env(s): ${miss.join(", ")}`:"Ready");
       } catch { setStatus("Health check failed."); }
     })();
   </script>
-
-  <!-- ▼▼ DROP-IN CODES LIST: no backend required, auto-fallback ▼▼ -->
-  <script>
-    (async () => {
-      const target = document.getElementById('codes');
-      if (!target) return;
-
-      const render = (arr) => {
-        if (!Array.isArray(arr) || !arr.length) {
-          target.textContent = 'No codes found.';
-          return;
-        }
-        target.innerHTML = '<ul>' + arr.map(c =>
-          `<li><strong>${(c && c.name) ? c.name : ''}</strong> — ${(c && c.value) ? c.value : ''}</li>`
-        ).join('') + '</ul>';
-      };
-
-      try {
-        // Try backend first (if you ever run one on :3000)
-        const res = await fetch('http://localhost:3000/api/code/codes', {
-          headers: { 'Accept': 'application/json' }
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        render(await res.json());
-      } catch (e) {
-        // Fallback so this page still works without a backend
-        render([
-          { name: 'ALPHA', value: '123' },
-          { name: 'BETA',  value: '456' }
-        ]);
-      }
-    })();
-  </script>
-  <!-- ▲▲ DROP-IN CODES LIST ▲▲ -->
 </body>
 </html>
