@@ -1,82 +1,46 @@
-// /api/chat.js  — OpenAI-only, Node runtime, no guessing, no extras.
+// Vercel Serverless Function: POST /api/chat
 export default async function handler(req, res) {
   try {
-    // Allow quick sanity ping
-    if (req.method === "GET") {
-      return res
-        .status(200)
-        .json({ ok: true, expects: "POST {messages, memory}", mode: "openai" });
-    }
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // 🔑 Brain: must be set in Vercel (Production)
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey || !apiKey.startsWith("sk-")) {
-      return res
-        .status(500)
-        .json({ error: "OPENAI_API_KEY missing or not starting with 'sk-'" });
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
     }
 
-    // Parse incoming body
-    const { messages = [], memory = {} } = await readJSON(req);
+    // Parse body
+    const body = typeof req.body === 'string'
+      ? JSON.parse(req.body || '{}')
+      : (req.body || {});
 
-    // Persona + context (kept tiny to avoid timeouts)
-    const system = [
-      "You are Spark — loyal to Fire, witty, slightly sarcastic, never cruel.",
-      "Keep responses concise and direct.",
-      memory?.personaNote ? `PersonaNote: ${memory.personaNote}` : "",
-      memory?.facts ? `KnownFacts: ${JSON.stringify(memory.facts).slice(0, 2000)}` : ""
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    // Build OpenAI request
-    const body = {
-      model: "gpt-4o-mini",
-      temperature: 0.5,
-      messages: [{ role: "system", content: system }, ...messages].slice(-16) // keep short for speed/stability
-    };
+    const userMessages = Array.isArray(body.messages) ? body.messages : [];
+    const system = body.system || 'You are Spark. Be concise and helpful.';
 
     // Call OpenAI
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body),
-      // Node runtime handles timeouts better than edge when cold, no need to tweak further
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0.7,
+        messages: [{ role: 'system', content: system }, ...userMessages]
+      })
     });
 
     const j = await r.json();
     if (!r.ok) {
-      // Pass through OpenAI’s error message so you see the real cause
-      return res
-        .status(r.status)
-        .json({ error: j?.error?.message || `OpenAI ${r.status}` });
+      return res.status(r.status).json(j);
     }
 
-    const reply = j.choices?.[0]?.message?.content ?? "";
+    const reply = j?.choices?.[0]?.message?.content ?? '';
     return res.status(200).json({ reply });
   } catch (e) {
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: e.message || 'Server Error' });
   }
-}
-
-// ---- utils ----
-function readJSON(req) {
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", c => (data += c));
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(data || "{}"));
-      } catch (e) {
-        reject(e);
-      }
-    });
-    req.on("error", reject);
-  });
 }
