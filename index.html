@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unfavorable-Chatbox</title>
+  <title>Spark of Fire</title>
   <style>
     body {
       background-color: #111; color: #eee; font-family: Arial, sans-serif;
@@ -12,21 +12,16 @@
     #sidebar { width: 50px; background-color: #1a1a1a; padding: 5px;
       display: flex; flex-direction: column; gap: 6px; overflow-y: auto; align-items: center; position: relative; }
     #main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; }
-    button.function-btn { width: 100%; padding: 6px; background-color: #333; color: #eee; border: none; cursor: pointer; font-size: 14px; transition: background-color 0.2s; }
-    button.function-btn:hover { background-color: #555; }
-    #functionPanel.hidden { display: none; }
-    #functionPanel { position: absolute; top: 45px; left: 65px; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px;
-      display: flex; flex-direction: column; gap: 6px; z-index: 10; }
 
-    /* Smaller chat box */
+    /* Controls & chat */
     #chatBox {
       width: 85%; max-width: 420px; height: 240px; overflow-y: auto;
       background: #222; border: 1px solid #444; padding: 6px; margin-top: 20px; font-size: 14px;
     }
     .user-message { text-align: right; margin: 5px; color: #99f; white-space: pre-wrap; }
     .bot-message  { text-align: left;  margin: 5px; color: #9f9; white-space: pre-wrap; }
-    #controls { display: flex; gap: 10px; align-items: center; }
-    #userInput { width: auto; flex: 1; padding: 8px; }
+    #controls { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    #userInput { flex: 1; padding: 8px; }
     button { padding: 8px 12px; cursor: pointer; }
 
     /* Avatar */
@@ -34,34 +29,25 @@
       margin-top: 20px; width: 600px; height: 600px; background-color: #333; border-radius: 50%;
       box-shadow: 0 0 15px #0ff; transition: box-shadow 0.2s ease, transform 0.2s ease; object-fit: cover; flex-shrink: 0;
     }
-    @keyframes pulse { 0%{box-shadow:0 0 20px #0f0; transform:scale(1);} 50%{box-shadow:0 0 40px #0ff; transform:scale(1.05);} 100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
+    @keyframes pulse { 0%{box-shadow:0 0 20px #0f0; transform:scale(1);}
+      50%{box-shadow:0 0 40px #0ff; transform:scale(1.05);}
+      100%{box-shadow:0 0 20px #0f0; transform:scale(1);} }
 
-    .hidden { display: none; }
     .status { font-size: 12px; opacity: .85; margin-top: 8px; min-height: 1em; }
   </style>
 </head>
 <body>
   <div id="sidebar">
-    <button class="function-btn" onclick="togglePanel()">⚙️</button>
-    <div id="functionPanel" class="hidden">
-      <button class="function-btn" onclick="showSubpanel('chat')">💬</button>
-      <button class="function-btn" onclick="showSubpanel('memory')">🧠</button>
-      <button class="function-btn" onclick="showSubpanel('history')">📜</button>
-      <button class="function-btn" onclick="showSubpanel('personality')">🎭</button>
-      <button class="function-btn" onclick="showSubpanel('dimensions')">🌌</button>
-      <button class="function-btn" onclick="showSubpanel('cleanse')">🧹</button>
-      <button class="function-btn" onclick="showSubpanel('calendar')">📆</button>
-      <button class="function-btn" onclick="showSubpanel('files')">📁</button>
-      <button class="function-btn" onclick="showSubpanel('search')">🔍</button>
-    </div>
+    <button onclick="togglePanel()">⚙️</button>
+    <div id="functionPanel" class="hidden"></div>
   </div>
 
   <div id="main">
-    <!-- ✅ Avatar at project root -->
+    <!-- Avatar at project root -->
     <img id="avatarImage" src="/cartoonpersona.png" alt="Avatar">
-    <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:space-between; height:100%;">
+    <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:flex-start; align-items:center; width:100%; max-width:720px;">
       <div id="chatBox"></div>
-      <div id="controls" style="margin-top:auto; display:flex; justify-content:space-between; padding:10px 0;">
+      <div id="controls">
         <input type="text" id="userInput" placeholder="Say something…">
         <button id="micBtn" title="Tap to talk">🎙️</button>
         <button id="sendBtn">Send</button>
@@ -71,100 +57,105 @@
   </div>
 
   <script>
-    /* Panels */
-    function togglePanel(){ const p=document.getElementById('functionPanel'); if(p) p.classList.toggle('hidden'); }
-    function showSubpanel(_id){}
+    // Panels (stub so your gear button works)
+    function togglePanel(){ const p=document.getElementById('functionPanel'); if(!p) return; p.classList.toggle('hidden'); }
 
-    /* State */
-    const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", dimension:"base", voiceMode:true, casualTone:true };
+    // State
+    const memory = { mood:"neutral", fragments:[], history:[], identity:"Spark", casualTone:true };
     let remoteMemory = {};
 
-    /* DOM */
-    const sendBtn   = document.getElementById("sendBtn");
-    const micBtn    = document.getElementById("micBtn");
-    const inputEl   = document.getElementById("userInput");
-    const chatBox   = document.getElementById("chatBox");
-    const statusEl  = document.getElementById("status");
-    const avatarImg = document.getElementById("avatarImage");
+    // DOM refs
+    const sendBtn = document.getElementById("sendBtn");
+    const micBtn  = document.getElementById("micBtn");
+    const inputEl = document.getElementById("userInput");
+    const chatBox = document.getElementById("chatBox");
+    const statusEl= document.getElementById("status");
+    const avatar  = document.getElementById("avatarImage");
 
     function setStatus(msg){ statusEl.textContent = msg || ""; }
-    function addMessage(sender, message) {
-      const msgDiv = document.createElement("div");
-      msgDiv.className = sender === "user" ? "user-message" : "bot-message";
-      msgDiv.textContent = message;
-      chatBox.appendChild(msgDiv);
+    function addMessage(sender, text){
+      const div = document.createElement("div");
+      div.className = sender === "user" ? "user-message" : "bot-message";
+      div.textContent = text;
+      chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    /* Voice OUT */
+    // Voice OUT
     function speakText(text){
       try {
         if (!window.speechSynthesis) return;
         const u = new SpeechSynthesisUtterance(text);
-        u.onstart = ()=> { if (avatarImg) avatarImg.style.animation = "pulse 1s ease-in-out infinite"; };
-        u.onend   = ()=> { if (avatarImg) avatarImg.style.animation = ""; };
+        u.onstart = ()=>{ if (avatar) avatar.style.animation = "pulse 1s ease-in-out infinite"; };
+        u.onend   = ()=>{ if (avatar) avatar.style.animation = ""; };
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(u);
       } catch {}
     }
 
-    /* Voice IN (tap to start/stop) */
+    // Voice IN (tap to start/stop)
     (() => {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!micBtn) return;
       if (!SR) { micBtn.title = "Voice not supported on this browser"; return; }
       const rec = new SR(); rec.lang="en-US"; rec.interimResults=false; rec.maxAlternatives=1;
       let listening = false;
-      function startRec(){ try{ rec.start(); listening=true; micBtn.textContent="🛑"; micBtn.title="Tap to stop"; setStatus("Listening…"); }catch{} }
-      function stopRec(){ try{ rec.stop(); }catch{} listening=false; micBtn.textContent="🎙️"; micBtn.title="Tap to talk"; setStatus(""); }
-      micBtn.addEventListener("click", ()=>{ listening?stopRec():startRec(); });
-      rec.onresult = (ev)=>{ const t=ev.results[0][0].transcript; inputEl.value=t; sendMessage(); };
-      rec.onerror  = (ev)=>{ stopRec(); setStatus(ev.error==="not-allowed"?"Mic blocked — enable mic in Site settings.":"Mic error: "+ev.error); };
-      rec.onend    = ()=>{ if (listening) stopRec(); };
+      function start(){ try{ rec.start(); listening=true; micBtn.textContent="🛑"; micBtn.title="Tap to stop"; setStatus("Listening…"); }catch{} }
+      function stop(){ try{ rec.stop(); }catch{} listening=false; micBtn.textContent="🎙️"; micBtn.title="Tap to talk"; setStatus(""); }
+      micBtn.addEventListener("click", ()=>{ listening?stop():start(); });
+      rec.onresult = ev => { inputEl.value = ev.results[0][0].transcript; sendMessage(); };
+      rec.onerror  = ev => { stop(); setStatus(ev.error==="not-allowed"?"Mic blocked — allow mic in Site settings.":"Mic error: "+ev.error); };
+      rec.onend    = () => { if (listening) stop(); };
     })();
 
-    /* Memory */
+    // Memory helpers
     async function loadRemoteMemory(){ try{ const r=await fetch("/api/memory"); remoteMemory = r.ok ? await r.json() : {}; }catch{ remoteMemory = {}; } }
     async function saveRemoteFacts(obj){ try{ await fetch("/api/memory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(obj||{})}); }catch{} }
 
-    /* Chat */
-    function buildMessages(){ const m=[]; (memory.history||[]).forEach(p=>{ if(p.user)m.push({role:"user",content:p.user}); if(p.bot)m.push({role:"assistant",content:p.bot}); }); return m; }
+    // Chat helpers (OpenAI-only backend)
+    function buildMessages(){
+      const msgs=[]; (memory.history||[]).forEach(p=>{ if(p.user) msgs.push({role:"user",content:p.user}); if(p.bot) msgs.push({role:"assistant",content:p.bot}); });
+      return msgs;
+    }
     async function apiChat(userText){
       const base = buildMessages(); base.push({ role:"user", content:userText });
-      const personaNote = `Slightly sarcastic, loyal to Josh. CasualTone=${!!memory.casualTone}`;
+      const personaNote = `Slightly sarcastic, loyal to Fire. CasualTone=${!!memory.casualTone}`;
       const payload = { messages: base, memory: { personaNote, facts: remoteMemory?.facts || {} } };
-      const r = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+      const r = await fetch("/api/chat",{ method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
       const j = await r.json().catch(()=> ({}));
       if (!r.ok) throw new Error(j?.error || "brain_offline");
       return j.reply || "";
     }
-    function extractFact(text){ const m=text.match(/I'll remember:? (.+?)=(.+?)(?:\.|$)/i); return m ? { [m[1].trim()]: m[2].trim() } : null; }
+    function extractFact(text){ const m=text.match(/I'll remember:? (.+?)=(.+?)(?:\.|$)/i); return m?{[m[1].trim()]:m[2].trim()}:null; }
 
     async function sendMessage(){
       const input = (inputEl?.value || "").trim(); if (!input) return;
       addMessage("user", input); inputEl.value = ""; setStatus("Thinking…");
       let reply = "";
-      try { await loadRemoteMemory(); reply = await apiChat(input); setStatus(""); }
-      catch (e) {
-        try {
-          const h = await fetch("/api/health"); const hj = await h.json();
-          const miss = []; if(!hj.has_OPENAI_API_KEY) miss.push("OPENAI_API_KEY"); if(!hj.has_GITHUB_TOKEN) miss.push("GITHUB_TOKEN"); if(!hj.has_GIST_ID) miss.push("GIST_ID");
-          setStatus(miss.length ? `Brain offline — missing env(s): ${miss.join(", ")}` : "Brain offline — check /api/chat logs.");
-          reply = "My brain isn't responding.";
-        } catch { setStatus("Brain offline — health endpoint failed."); reply = "My brain isn't responding."; }
+      try {
+        await loadRemoteMemory();
+        reply = await apiChat(input);
+        setStatus("");
+      } catch (e) {
+        setStatus("Brain offline — check /api/health (ENVs).");
+        reply = "My brain isn’t responding. Peek /api/health for missing envs.";
       }
       addMessage("bot", reply); speakText(reply);
-      memory.history = memory.history || []; memory.history.push({ user: input, bot: reply });
+      (memory.history ||= []).push({ user: input, bot: reply });
       const fact = extractFact(reply); if (fact) await saveRemoteFacts({ facts: fact });
     }
 
     sendBtn.addEventListener("click", sendMessage);
-    inputEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendMessage(); });
+    inputEl.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
 
-    /* Boot */
-    (async ()=>{ 
-      addMessage("bot", "What’s the crisis today, Josh?");
-      try { const h = await fetch("/api/health"); const hj = await h.json(); const miss=[]; if(!hj.has_OPENAI_API_KEY) miss.push("OPENAI_API_KEY"); if(!hj.has_GITHUB_TOKEN) miss.push("GITHUB_TOKEN"); if(!hj.has_GIST_ID) miss.push("GIST_ID"); setStatus(miss.length?`Missing env(s): ${miss.join(", ")}`:"Ready"); } catch { setStatus("Health check failed."); }
+    // Boot
+    (async ()=>{
+      addMessage("bot","What’s the crisis today, Fire?");
+      try {
+        const h=await fetch("/api/health"); const hj=await h.json();
+        const miss=[]; if(!hj.has_OPENAI_API_KEY) miss.push("OPENAI_API_KEY"); if(!hj.has_GITHUB_TOKEN) miss.push("GITHUB_TOKEN"); if(!hj.has_GIST_ID) miss.push("GIST_ID");
+        setStatus(miss.length?`Missing env(s): ${miss.join(", ")}`:"Ready");
+      } catch { setStatus("Health check failed."); }
     })();
   </script>
 </body>
